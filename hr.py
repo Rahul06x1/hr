@@ -1,6 +1,7 @@
 import csv
 import os
 import sys
+import requests
 
 
 def get_csv_data(file_name, lines):
@@ -11,20 +12,23 @@ def get_csv_data(file_name, lines):
     return lines
 
 
-def generate_vcard(lines):
-    for line in lines:
-        data = generate_vcf_data(line)
-        with open(f"vcards/{line[1].lower()}_{line[0].lower()}.vcf", "w") as f:
-            f.write(data)
+def generate_vcard(line, data):
+    with open(f"vcards/{line[1].lower()}_{line[0].lower()}.vcf", "w") as f:
+        f.write(data)
+
+
+def generate_qr_code(line, data):
+    qr_code = requests.get(
+        f"https://chart.googleapis.com/chart?cht=qr&chs=500x500&chl={data}"
+    )
+    with open(f"vcards/{line[1].lower()}_{line[0].lower()}.qr.png", "wb") as f:
+        f.write(qr_code.content)
 
 
 def generate_vcf_data(line):
-    lname = line[0]
-    fname = line[1]
-    designation = line[2]
-    email = line[3]
-    phone = line[4]
-    data = f"""VERSION:2.1
+    lname, fname, designation, email, phone = line
+    data = f"""BEGIN:VCARD
+VERSION:2.1
 N:{lname};{fname}
 FN:{fname} {lname}
 ORG:Authors, Inc.
@@ -33,6 +37,7 @@ TEL;WORK;VOICE:{phone}
 ADR;WORK:;;100 Flat Grape Dr.;Fresno;CA;95555;United States of America
 EMAIL;PREF;INTERNET:{email}
 REV:20150922T195243Z
+END:VCARD
 """
     return data
 
@@ -43,7 +48,10 @@ def main():
     file_name = sys.argv[1]
     lines = []
     lines = get_csv_data(file_name, lines)
-    generate_vcard(lines)
+    for line in lines:
+        data = generate_vcf_data(line)
+        generate_vcard(line, data)
+        generate_qr_code(line, data)
 
 
 if __name__ == "__main__":
