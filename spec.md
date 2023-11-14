@@ -22,14 +22,13 @@ A sample input file `names.csv` is provided in the repo.
 
 ## Output:
 
-    - Will generate one vCard file per row in the csv_file. The filename
+- Will generate one vCard file per row in the csv_file. The filename
 will be the concatenation of firstname and lastname seperated by "_" 
 in the row (e.g. annette_williams.vcf).
-    - Will generate one qr card file per row in the csv_file. The filename
+- Will generate one qr card file per row in the csv_file. The filename
 will be the concatenation of firstname and lastname seperated by "_" 
 in the row (e.g. annette_williams.qr.png).
-    - All the files will be in 
-the `vcards` directory.
+- All the files will be in the `vcards` directory.
 
 This is a sample vcard file
 
