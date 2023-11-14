@@ -14,7 +14,8 @@ def test_generate_vcf_data():
     ]
     assert (
         generate_vcf_data(line)
-        == """VERSION:2.1
+        == """BEGIN:VCARD
+VERSION:2.1
 N:Walker;Charlene
 FN:Charlene Walker
 ORG:Authors, Inc.
@@ -23,6 +24,7 @@ TEL;WORK;VOICE:(252)913-2078x96029
 ADR;WORK:;;100 Flat Grape Dr.;Fresno;CA;95555;United States of America
 EMAIL;PREF;INTERNET:charl.walke@kelly-williams.info
 REV:20150922T195243Z
+END:VCARD
 """
     )
 
