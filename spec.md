@@ -1,10 +1,10 @@
-1. Objective:
+## Objective:
 
 Generates visiting cards and their qr codes for a list of employees provided in a CSV
 file
 
 
-2. Input:
+## Input:
 
 Command-Line Arguments:
     csv_file: The path to the CSV file containing contact information.
@@ -20,7 +20,7 @@ phone number.
 A sample input file `names.csv` is provided in the repo.
 
 
-3. Output:
+## Output:
 
     - Will generate one vCard file per row in the csv_file. The filename
 will be the concatenation of firstname and lastname seperated by "_" 
@@ -46,7 +46,7 @@ This is a sample vcard file
     END:VCARD
 
 
-4. Execution:
+## Execution:
 
 The script can be executed from the command line using:
  
