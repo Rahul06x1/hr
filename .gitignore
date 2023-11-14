@@ -5,5 +5,5 @@ htmlcov
 .coverage
 *.pyc
 vcards
-gen_sheet.py
-names.csv
+/gen_sheet.py
+/names.csv
