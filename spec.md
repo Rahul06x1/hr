@@ -33,14 +33,17 @@ the `vcards` directory.
 
 This is a sample vcard file
 
-    Name: Annette
-    Full Name: Annette Williams
+    BEGIN:VCARD
+    VERSION:2.1
+    N:Williams;Annette
+    FN:Annette Williams
     ORG:Authors, Inc.
-    TITLE: Psychiatrist
-    TEL;WORK;VOICE: 9305709284
+    TITLE:Psychiatrist
+    TEL;WORK;VOICE:9305709284
     ADR;WORK:;;100 Flat Grape Dr.;Fresno;CA;95555;United States of America
-    EMAIL;PREF;INTERNET: annet.willi@holloway.org
+    EMAIL;PREF;INTERNET:annet.willi@holloway.org
     REV:20150922T195243Z
+    END:VCARD
 
 
 4. Execution:
