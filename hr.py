@@ -1,25 +1,75 @@
 import argparse
 import csv
-import os
 import logging
+import os
 import requests
 
 logger = None
 
+
 def parse_args():
-    parser = argparse.ArgumentParser(prog="hr.py",
-                                     description="Generates vcard and qrcode for each employee")
-    parser.add_argument("opfile", help="name of csv file containing employee details")
-    parser.add_argument("-o", "--overwrite", help="overwrite existing directory", action='store_true', default=False)
-    parser.add_argument("-v", "--verbose", help="print detailed logging", action='store_true', default=False)
-    parser.add_argument("-qr", "--qrcode", help="generates qrcode", action='store_true', default=False)
-    parser.add_argument('-qrd','--qrcodedimension',help='set custom qr code dimensions',type=int, nargs='+')
-    parser.add_argument('-r','--range',help='generate files inbetween a range of line numbers',type=int, nargs='+')
-    parser.add_argument("-d", "--directory", help="generate files in custom directory", action='store', type=str, default='vcards')
-    parser.add_argument("-a", "--address", help="set custom address", action='store', type=str, default='100 Flat Grape Dr.;Fresno;CA;95555;United States of America')
-    parser.add_argument("-n", "--number", help="number of records to generate", action='store', type=int, default=10)
+    parser = argparse.ArgumentParser(
+        prog="hr.py", description="Generates vcard and qrcode for each employee"
+    )
+    parser.add_argument("csv_file", help="name of csv file containing employee details")
+    parser.add_argument(
+        "-o",
+        "--overwrite",
+        help="overwrite existing directory",
+        action="store_true",
+        default=False,
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        help="print detailed logging",
+        action="store_true",
+        default=False,
+    )
+    parser.add_argument(
+        "-qr", "--qrcode", help="generates qrcode", action="store_true", default=False
+    )
+    parser.add_argument(
+        "-qrd",
+        "--qrcodedimension",
+        help="set custom qr code dimensions",
+        type=int,
+        nargs="+",
+    )
+    parser.add_argument(
+        "-r",
+        "--range",
+        help="generate files inbetween a range of line numbers",
+        type=int,
+        nargs="+",
+    )
+    parser.add_argument(
+        "-d",
+        "--directory",
+        help="generate files in custom directory",
+        action="store",
+        type=str,
+        default="vcards",
+    )
+    parser.add_argument(
+        "-a",
+        "--address",
+        help="set custom address",
+        action="store",
+        type=str,
+        default="100 Flat Grape Dr.;Fresno;CA;95555;United States of America",
+    )
+    parser.add_argument(
+        "-n",
+        "--number",
+        help="number of records to generate",
+        action="store",
+        type=int,
+        default=10,
+    )
     args = parser.parse_args()
     return args
+
 
 def setup_logging(log_level):
     global logger
@@ -28,24 +78,36 @@ def setup_logging(log_level):
     fhandler = logging.FileHandler("run.log")
     fhandler.setLevel(logging.DEBUG)
     handler.setLevel(log_level)
-    handler.setFormatter(logging.Formatter("[%(levelname)s] %(asctime)s | %(filename)s:%(lineno)d | %(message)s"))
-    fhandler.setFormatter(logging.Formatter("[%(levelname)s] %(asctime)s | %(filename)s:%(lineno)d | %(message)s"))
+    handler.setFormatter(
+        logging.Formatter(
+            "[%(levelname)s] %(asctime)s | %(filename)s:%(lineno)d | %(message)s"
+        )
+    )
+    fhandler.setFormatter(
+        logging.Formatter(
+            "[%(levelname)s] %(asctime)s | %(filename)s:%(lineno)d | %(message)s"
+        )
+    )
     logger.setLevel(logging.DEBUG)
     logger.addHandler(handler)
     logger.addHandler(fhandler)
 
-    
-def get_csv_data(file_name, lines,start = 0, end = float('inf')):
+
+def get_csv_data(file_name, lines, start=0, end=float("inf")):
     line_num = 0
     with open(file_name, mode="r") as file:
         csv_file = csv.reader(file)
         for l in csv_file:
             line_num += 1
-            if start<=line_num<=end:
-                if len(l)==5:
+            if start <= line_num <= end:
+                if len(l) == 5:
                     lines.append(l)
                 else:
-                    logger.warning('Insufficient data provided in line %d of file %s', line_num, file_name)
+                    logger.warning(
+                        "Insufficient data provided in line %d of file %s",
+                        line_num,
+                        file_name,
+                    )
     return lines
 
 
@@ -83,6 +145,7 @@ END:VCARD
 
 def main():
     args = parse_args()
+    row_count = 0
     if args.verbose:
         setup_logging(logging.DEBUG)
     else:
@@ -91,20 +154,22 @@ def main():
     if not os.path.exists(args.directory):
         os.makedirs(args.directory)
     elif not args.overwrite:
-        logger.info("""
-                    Directory already exists
-                    Use -o to overwrite
-                    """)
+        logger.info(
+            """
+Directory already exists
+Use -o to overwrite
+"""
+        )
         exit()
     if args.range:
         if len(args.range) != 2:
             logger.info("Use only 2 arguments")
             exit()
         start, end = args.range
-        lines = get_csv_data(args.opfile, [],start,end)
+        lines = get_csv_data(args.csv_file, [], start, end)
     else:
-        lines = get_csv_data(args.opfile, [])
-    row_count = 0
+        lines = get_csv_data(args.csv_file, [])
+
     for line in lines:
         row_count += 1
         line.append(args.address)
@@ -121,6 +186,7 @@ def main():
         if row_count >= args.number and not args.range:
             break
     logger.info("Generated Successfully")
+
 
 if __name__ == "__main__":
     main()
