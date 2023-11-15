@@ -6,8 +6,20 @@ file
 
 ## Input:
 
-Command-Line Arguments:
-    csv_file: The path to the CSV file containing contact information.
+Positional Arguments:
+    csv_file             The path to the CSV file containing contact information.
+
+Optional Arguments:
+    -h, --help                          show this help message and exit
+    -o, --overwrite                     overwrite existing directory
+    -v, --verbose                       print detailed logging
+    -qr, --qrcode                       generates qrcode
+    -qrd **height** **width**           set custom qr code dimensions height x width
+    -r **start** **end**                generate files inbetween start and end of line numbers
+    -d **custom_directory_name**        generate files in custom directory
+    -a, --address **custom_address**    set custom address
+    -n, --number **x**                  generate x number of records
+                            
    
 
 Each row in the csv_file should have the following columns
