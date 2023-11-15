@@ -112,18 +112,20 @@ def get_csv_data(file_name, lines, start=0, end=float("inf")):
 
 
 def generate_vcard(line, data, row_count):
-    with open(f"vcards/{line[1].lower()}_{line[0].lower()}.vcf", "w") as f:
+    lname, fname, email = line[0], line[1], line[3]
+    with open(f"vcards/{fname.lower()}_{lname.lower()}.vcf", "w") as f:
         f.write(data)
-    logger.debug("%d Generated vCard for %s", row_count, line[3])
+    logger.debug("%d Generated vCard for %s", row_count, email)
 
 
 def generate_qr_code(line, data, row_count, height=500, width=500):
+    lname, fname, email = line[0], line[1], line[3]
     qr_code = requests.get(
         f"https://chart.googleapis.com/chart?cht=qr&chs={height}x{width}&chl={data}"
     )
-    with open(f"vcards/{line[1].lower()}_{line[0].lower()}.qr.png", "wb") as f:
+    with open(f"vcards/{fname.lower()}_{lname.lower()}.qr.png", "wb") as f:
         f.write(qr_code.content)
-    logger.debug("%d Generated qr code for %s", row_count, line[3])
+    logger.debug("%d Generated qr code for %s", row_count, email)
 
 
 def generate_vcf_data(line):
@@ -150,7 +152,9 @@ def main():
         setup_logging(logging.DEBUG)
     else:
         setup_logging(logging.INFO)
-
+    if not os.path.isfile(args.csv_file):
+        logger.error("%s does not exists", args.csv_file)
+        exit()
     if not os.path.exists(args.directory):
         os.makedirs(args.directory)
     elif not args.overwrite:
