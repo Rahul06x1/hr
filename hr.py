@@ -158,7 +158,7 @@ def main():
     if not os.path.exists(args.directory):
         os.makedirs(args.directory)
     elif not args.overwrite:
-        logger.info(
+        logger.error(
             """
 Directory already exists
 Use -o to overwrite
@@ -167,7 +167,7 @@ Use -o to overwrite
         exit()
     if args.range:
         if len(args.range) != 2:
-            logger.info("Use only 2 arguments")
+            logger.error("Use only 2 arguments")
             exit()
         start, end = args.range
         lines = get_csv_data(args.csv_file, [], start, end)
@@ -181,7 +181,7 @@ Use -o to overwrite
         generate_vcard(line, data, row_count)
         if args.qrcodedimension:
             if len(args.qrcodedimension) != 2:
-                logger.info("Use only 2 arguments")
+                logger.error("Use only 2 arguments")
                 exit()
             height, width = args.qrcodedimension
             generate_qr_code(line, data, row_count, height, width)
