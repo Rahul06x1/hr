@@ -14,6 +14,7 @@ def test_generate_vcf_data():
         "Therapist, art",
         "charl.walke@kelly-williams.info",
         "(252)913-2078x96029",
+        "100 Flat Grape Dr.;Fresno;CA;95555;United States of America"
     ]
     assert (
         generate_vcf_data(line)
