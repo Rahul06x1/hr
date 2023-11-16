@@ -14,7 +14,7 @@ file
         -o, --overwrite                     overwrite existing directory
         -v, --verbose                       print detailed logging
         -qr, --qrcode                       generates qrcode
-        -qrd <height> <width>               set custom qr code dimensions height x width
+        -qrd <dimension>                    set custom qr code dimension
         -r <start> <end>                    generate files inbetween start and end of line numbers
         -d <custom_directory_name>          generate files in custom directory
         -a, --address <custom_address>      set custom address
