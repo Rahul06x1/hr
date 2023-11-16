@@ -34,7 +34,6 @@ def parse_args():
         "--qrcodedimension",
         help="set custom qr code dimensions",
         type=int,
-        nargs="+",
     )
     parser.add_argument(
         "-r",
@@ -118,10 +117,10 @@ def generate_vcard(line, data, row_count):
     logger.debug("%d Generated vCard for %s", row_count, email)
 
 
-def generate_qr_code(line, data, row_count, height=500, width=500):
+def generate_qr_code(line, data, row_count, dimension=500):
     lname, fname, email = line[0], line[1], line[3]
     qr_code = requests.get(
-        f"https://chart.googleapis.com/chart?cht=qr&chs={height}x{width}&chl={data}"
+        f"https://chart.googleapis.com/chart?cht=qr&chs={dimension}x{dimension}&chl={data}"
     )
     with open(f"vcards/{fname.lower()}_{lname.lower()}.qr.png", "wb") as f:
         f.write(qr_code.content)
@@ -180,11 +179,14 @@ Use -o to overwrite
         data = generate_vcf_data(line)
         generate_vcard(line, data, row_count)
         if args.qrcodedimension:
-            if len(args.qrcodedimension) != 2:
-                logger.error("Use only 2 arguments")
+            if not 70 <= args.qrcodedimension <= 547:
+                logger.debug("""
+Cannot generate qr code for the provided dimension
+Try a dimension between 70 and 547
+""")
                 exit()
-            height, width = args.qrcodedimension
-            generate_qr_code(line, data, row_count, height, width)
+            dimension = args.qrcodedimension
+            generate_qr_code(line, data, row_count, dimension)
         elif args.qrcode:
             generate_qr_code(line, data, row_count)
         if row_count >= args.number and not args.range:
