@@ -177,10 +177,9 @@ Use -o to overwrite
         row_count += 1
         line.append(args.address)
         data = generate_vcf_data(line)
-        generate_vcard(line, data, row_count)
         if args.qrcodedimension:
             if not 70 <= args.qrcodedimension <= 547:
-                logger.warning(
+                logger.error(
                     """
 Cannot generate qr code for the provided dimension
 Try a dimension between 70 and 547
@@ -191,6 +190,7 @@ Try a dimension between 70 and 547
             generate_qr_code(line, data, row_count, dimension)
         elif args.qrcode:
             generate_qr_code(line, data, row_count)
+        generate_vcard(line, data, row_count)
         if row_count >= args.number and not args.range:
             break
     logger.info("Generated Successfully")
