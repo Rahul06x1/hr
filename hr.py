@@ -9,7 +9,7 @@ logger = None
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        prog="hr.py", description="Generates vcard and qrcode for each employee"
+        prog="hr.py", description="Generates vcard and qrcode for each employee from csv file"
     )
     parser.add_argument("csv_file", help="name of csv file containing employee details")
     parser.add_argument(
@@ -27,13 +27,14 @@ def parse_args():
         default=False,
     )
     parser.add_argument(
-        "-qr", "--qrcode", help="generates qrcode", action="store_true", default=False
+        "-q", "--qrcode", help="generates qrcode", action="store_true", default=False
     )
     parser.add_argument(
-        "-qrd",
+        "-x",
         "--qrcodedimension",
         help="set custom qr code dimensions",
         type=int,
+        choices=range(70, 548)
     )
     parser.add_argument(
         "-r",
@@ -110,25 +111,22 @@ def get_csv_data(file_name, lines, start=0, end=float("inf")):
     return lines
 
 
-def generate_vcard(line, data, row_count):
-    lname, fname, email = line[0], line[1], line[3]
-    with open(f"vcards/{fname.lower()}_{lname.lower()}.vcf", "w") as f:
+def generate_vcard(email, data, row_count):
+    with open(os.path.join("vcards", f"{email}.vcf"), "w") as f:
         f.write(data)
     logger.debug("%d Generated vCard for %s", row_count, email)
 
 
-def generate_qr_code(line, data, row_count, dimension=500):
-    lname, fname, email = line[0], line[1], line[3]
+def generate_qr_code(email, data, row_count, dimension=500):
     qr_code = requests.get(
         f"https://chart.googleapis.com/chart?cht=qr&chs={dimension}x{dimension}&chl={data}"
     )
-    with open(f"vcards/{fname.lower()}_{lname.lower()}.qr.png", "wb") as f:
+    with open(os.path.join("vcards", f"{email}.qr.png"), "wb") as f:
         f.write(qr_code.content)
     logger.debug("%d Generated qr code for %s", row_count, email)
 
 
-def generate_vcf_data(line):
-    lname, fname, designation, email, phone, address = line
+def generate_vcf_data(lname, fname, designation, email, phone, address):
     data = f"""BEGIN:VCARD
 VERSION:2.1
 N:{lname};{fname}
@@ -175,22 +173,14 @@ Use -o to overwrite
 
     for line in lines:
         row_count += 1
-        line.append(args.address)
-        data = generate_vcf_data(line)
+        lname, fname, designation, email, phone = line
+        data = generate_vcf_data(lname, fname, designation, email, phone, args.address)
         if args.qrcodedimension:
-            if not 70 <= args.qrcodedimension <= 547:
-                logger.error(
-                    """
-Cannot generate qr code for the provided dimension
-Try a dimension between 70 and 547
-"""
-                )
-                exit()
             dimension = args.qrcodedimension
-            generate_qr_code(line, data, row_count, dimension)
+            generate_qr_code(email, data, row_count, dimension)
         elif args.qrcode:
-            generate_qr_code(line, data, row_count)
-        generate_vcard(line, data, row_count)
+            generate_qr_code(email, data, row_count)
+        generate_vcard(email, data, row_count)
         if row_count >= args.number and not args.range:
             break
     logger.info("Generated Successfully")
