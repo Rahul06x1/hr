@@ -180,10 +180,12 @@ Use -o to overwrite
         generate_vcard(line, data, row_count)
         if args.qrcodedimension:
             if not 70 <= args.qrcodedimension <= 547:
-                logger.debug("""
+                logger.warning(
+                    """
 Cannot generate qr code for the provided dimension
 Try a dimension between 70 and 547
-""")
+"""
+                )
                 exit()
             dimension = args.qrcodedimension
             generate_qr_code(line, data, row_count, dimension)
