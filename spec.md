@@ -7,10 +7,11 @@ file
 ## Input:
 
     Positional Arguments:
-        csv_file             The path to the CSV file containing contact information.
+        mode             Action to generate, initialize database or load csv file to database
 
     Optional Arguments:
         -h, --help                          show this help message and exit
+        -c <csv_file>                       load csv file to database
         -o, --overwrite                     overwrite existing directory
         -v, --verbose                       print detailed logging
         -qr, --qrcode                       generates qrcode

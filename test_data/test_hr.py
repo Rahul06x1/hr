@@ -8,16 +8,13 @@ from hr import generate_vcf_data, get_csv_data
 
 
 def test_generate_vcf_data():
-    line = [
-        "Walker",
+    assert (
+        generate_vcf_data("Walker",
         "Charlene",
         "Therapist, art",
         "charl.walke@kelly-williams.info",
         "(252)913-2078x96029",
-        "100 Flat Grape Dr.;Fresno;CA;95555;United States of America"
-    ]
-    assert (
-        generate_vcf_data(line)
+        "100 Flat Grape Dr.;Fresno;CA;95555;United States of America")
         == """BEGIN:VCARD
 VERSION:2.1
 N:Walker;Charlene
