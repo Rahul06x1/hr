@@ -208,7 +208,6 @@ def initialize_leave_table(database, user):
         """CREATE TABLE leaves (id SERIAL PRIMARY KEY, date DATE NOT NULL, 
         reason VARCHAR(200) NOT NULL, employee_id INTEGER references employees(id));
         """
-
     )
     conn.commit()
     logger.info("Table leaves initialized")
