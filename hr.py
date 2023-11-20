@@ -99,10 +99,14 @@ def parse_args():
     parser_leave.add_argument("employee_id", type=int, help="employee id of absentee")
     parser_leave.add_argument("date", type=str, help="date of absence")
     parser_leave.add_argument("reason", type=str, help="reason of absence")
-    #evavulate leaves remaining
-    parser_leaves_remaining = subparsers.add_parser("leaves_remaining", help="evavulate leaves remaining of an employee")
+    # evavulate leaves remaining
+    parser_leaves_remaining = subparsers.add_parser(
+        "leaves_remaining", help="evavulate leaves remaining of an employee"
+    )
     parser_leaves_remaining.add_argument("database", type=str, help="name of database")
-    parser_leaves_remaining.add_argument("username", type=str, help="name of postgres user")
+    parser_leaves_remaining.add_argument(
+        "username", type=str, help="name of postgres user"
+    )
     parser_leaves_remaining.add_argument("employee_id", type=int, help="id of employee")
 
     args = parser.parse_args()
@@ -201,6 +205,7 @@ def initialize_employee_table(database, user):
     cur.close()
     conn.close()
 
+
 def initialize_leave_table(database, user):
     conn = psycopg2.connect(f"dbname={database} user={user}")
     cur = conn.cursor()
@@ -254,9 +259,8 @@ def insert_into_table_employees(
     cur.close()
     conn.close()
 
-def insert_into_table_leaves(
-    database, user, employee_id, date, reason
-):
+
+def insert_into_table_leaves(database, user, employee_id, date, reason):
     conn = psycopg2.connect(f"dbname={database} user={user}")
     cur = conn.cursor()
     cur.execute(
@@ -266,6 +270,7 @@ def insert_into_table_leaves(
     conn.commit()
     cur.close()
     conn.close()
+
 
 def get_table_data(database, user, start=1, end=9223372036854775807):
     offset = start - 1
@@ -329,22 +334,36 @@ END:VCARD
 """
     return data
 
+
 def evavulate_leaves_remaining(database, user, employee_id):
     conn = psycopg2.connect(f"dbname={database} user={user}")
     cur = conn.cursor()
     cur.execute(
-        """SELECT COUNT(e.id),e.first_name,e.last_name FROM employees e 
-        INNER JOIN leaves l ON e.id = l.employee_id WHERE e.id=%s 
-        GROUP BY e.id, e.first_name, e.last_name;""",
+        "SELECT first_name, last_name FROM employees WHERE id=%s",
         (employee_id,),
     )
-    leaves_taken, first_name, last_name = cur.fetchall()[0]
-    leaves_remaining = TOTAL_LEAVE - leaves_taken
+    name = cur.fetchall()
+    if name:
+        first_name, last_name = name[0]
+    else:
+        logger.error(f"No employee with id {employee_id}")
+        exit()
+    cur.execute(
+        """SELECT COUNT(e.id) FROM employees e 
+        INNER JOIN leaves l ON e.id = l.employee_id WHERE e.id=%s
+        """,
+        (employee_id,),
+    )
+    leaves_taken = cur.fetchone()
+    if leaves_taken:
+        leaves_taken_count = leaves_taken[0]
+    else:
+        leaves_taken_count = 0
+    leaves_remaining = TOTAL_LEAVE - leaves_taken_count
     conn.commit()
     cur.close()
     conn.close()
-    return leaves_remaining,first_name,last_name
-    
+    return leaves_remaining, first_name, last_name
 
 
 def main():
@@ -413,11 +432,17 @@ def main():
                 break
         logger.info("Generated Successfully")
     elif args.mode == "leave":
-        insert_into_table_leaves(args.database, args.username, args.employee_id, args.date, args.reason)
+        insert_into_table_leaves(
+            args.database, args.username, args.employee_id, args.date, args.reason
+        )
         logger.info("inserted to table leaves")
     elif args.mode == "leaves_remaining":
-        leaves_remaining,first_name,last_name =evavulate_leaves_remaining(args.database, args.username, args.employee_id)
-        logger.info(f"Dear {first_name} {last_name}, you have {leaves_remaining} leaves remaining.")
+        leaves_remaining, first_name, last_name = evavulate_leaves_remaining(
+            args.database, args.username, args.employee_id
+        )
+        logger.info(
+            f"Dear {first_name} {last_name}, you have {leaves_remaining} leaves remaining."
+        )
 
 
 if __name__ == "__main__":
