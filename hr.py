@@ -23,7 +23,7 @@ def parse_args():
         default=False,
     )
 
-    subparsers = parser.add_subparsers(dest="mode", help="sub-command help")
+    subparsers = parser.add_subparsers(dest="mode", help="action to perform")
     # initdb
     parser_initdb = subparsers.add_parser("initdb", help="initialize database")
     parser_initdb.add_argument("database", type=str, help="name of database")
@@ -94,20 +94,20 @@ def parse_args():
     )
     # create leave
     parser_leave = subparsers.add_parser("leave", help="add leave to database")
-    parser_leave.add_argument("database", type=str, help="name of database")
-    parser_leave.add_argument("username", type=str, help="name of postgres user")
     parser_leave.add_argument("employee_id", type=int, help="employee id of absentee")
     parser_leave.add_argument("date", type=str, help="date of absence")
     parser_leave.add_argument("reason", type=str, help="reason of absence")
+    parser_leave.add_argument("database", type=str, help="name of database")
+    parser_leave.add_argument("username", type=str, help="name of postgres user")
     # evavulate leaves remaining
     parser_leaves_remaining = subparsers.add_parser(
         "leaves_remaining", help="evavulate leaves remaining of an employee"
     )
+    parser_leaves_remaining.add_argument("employee_id", type=int, help="id of employee")
     parser_leaves_remaining.add_argument("database", type=str, help="name of database")
     parser_leaves_remaining.add_argument(
         "username", type=str, help="name of postgres user"
     )
-    parser_leaves_remaining.add_argument("employee_id", type=int, help="id of employee")
 
     args = parser.parse_args()
     return args
@@ -441,7 +441,7 @@ def main():
             args.database, args.username, args.employee_id
         )
         logger.info(
-            f"Dear {first_name} {last_name}, you have {leaves_remaining} leaves remaining."
+            f"{first_name} {last_name} have {leaves_remaining} leaves remaining."
         )
 
 
