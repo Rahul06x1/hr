@@ -63,6 +63,48 @@ file
         -a, --address <custom_address>      set custom address
         -n, --number <x>                    generate x number of records
 
+### initdb
+
+    Usage: 
+        hr.py initdb [-h] database username
+
+    Positional Arguments:
+        database    name of database
+        username    name of postgres user
+
+    Options:
+        -h, --help  show this help message and exit
+
+### load
+
+    Usage: 
+        hr.py load [-h] csv_file database username
+
+    Positional arguments:
+        csv_file    name of csv file
+        database    name of database
+        username    name of postgres user
+
+    Options:
+        -h, --help  show this help message and exit
+
+
+### generate
+
+    Positional arguments:
+        database                            name of database
+        username                            name of postgres user
+    Optional Arguments:
+        -h, --help                          show this help message and exit
+        -v, --verbose                       print detailed logging
+        -o, --overwrite                     overwrite existing directory
+        -q, --qrcode                        generates qrcode
+        -x <dimension>                      set custom qr code dimension
+        -r <start> <end>                    generate files inbetween start and end of line numbers
+        -d <custom_directory_name>          generate files in custom directory
+        -a, --address <custom_address>      set custom address
+        -n, --number <x>                    generate x number of records
+
 ### leave
 
     Usage: 
