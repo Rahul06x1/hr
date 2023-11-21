@@ -92,7 +92,7 @@ file
 ### generate
 
     Usage: 
-        hr.py generate database username
+        hr.py load [-h] csv_file database username
 
     Positional arguments:
         database                            name of database
