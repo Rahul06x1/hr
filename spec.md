@@ -6,21 +6,90 @@ file
 
 ## Input:
 
-    Positional Arguments:
-        mode             Action to generate, initialize database or load csv file to database
+    Usage: 
+        hr.py [-h] [-v] {initdb,load,generate,leave,leaves_remaining}
 
+    Positional Arguments:
+        {initdb,load,generate,leave,leaves_remaining}       action to perform
+        initdb                                              initialize database
+        load                                                load csv file data to database
+        generate                                            generate vcards
+        leave                                               add leave to database
+        leaves_remaining                                    evavulate leaves remaining of an employee
+
+    Options:
+        -h, --help                          show this help message and exit
+        -v, --verbose                       print detailed logging
+
+
+### initdb
+
+    Usage: 
+        hr.py initdb [-h] database username
+
+    Positional Arguments:
+        database    name of database
+        username    name of postgres user
+
+    Options:
+        -h, --help  show this help message and exit
+
+### load
+
+    Usage: 
+        hr.py load [-h] csv_file database username
+
+    Positional arguments:
+        csv_file    name of csv file
+        database    name of database
+        username    name of postgres user
+
+    Options:
+        -h, --help  show this help message and exit
+
+
+### generate
+
+    Positional arguments:
+        database                            name of database
+        username                            name of postgres user
     Optional Arguments:
         -h, --help                          show this help message and exit
-        -c <csv_file>                       load csv file to database
         -o, --overwrite                     overwrite existing directory
-        -v, --verbose                       print detailed logging
-        -qr, --qrcode                       generates qrcode
-        -qrd <dimension>                    set custom qr code dimension
+        -q, --qrcode                        generates qrcode
+        -x <dimension>                      set custom qr code dimension
         -r <start> <end>                    generate files inbetween start and end of line numbers
         -d <custom_directory_name>          generate files in custom directory
         -a, --address <custom_address>      set custom address
         -n, --number <x>                    generate x number of records
-                            
+
+### leave
+
+    Usage: 
+        hr.py leave [-h] employee_id date reason database username
+
+    Positional Arguments:
+        employee_id  employee id of absentee
+        date         date of absence
+        reason       reason of absence
+        database     name of database
+        username     name of postgres user
+
+    Options:
+        -h, --help   show this help message and exit
+
+### leaves_remaining
+
+    Usage: 
+        hr.py leaves_remaining [-h] employee_id database username
+
+    Positional Arguments:
+        employee_id  id of employee
+        database     name of database
+        username     name of postgres user
+
+    Options:
+        -h, --help   show this help message and exit
 
 Each row in the csv_file should have the following columns
 
