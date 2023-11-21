@@ -134,17 +134,10 @@ def check_database_exist(database, user):
         exit()
     conn = psycopg2.connect(f"dbname=postgres user={user}")
     cur = conn.cursor()
-    conn.autocommit = True
-    cur.execute(
-        """
-        SELECT EXISTS (
-            SELECT datname
-            FROM pg_catalog.pg_database
-            WHERE lower(datname) = lower(%s)
-        );
-    """,
-        (database,),
-    )
+    with open("sql/check_database_exist.sql", "r") as query:
+        query = query.read()
+    cur.execute(query, (database,))
+    conn.commit()
     exists = cur.fetchone()[0]
     if not exists:
         logger.error(
@@ -161,15 +154,10 @@ Use initdb to initialize database
 def check_table_row_exist(database, user):
     conn = psycopg2.connect(f"dbname={database} user={user}")
     cur = conn.cursor()
-    conn.autocommit = True
-    cur.execute(
-        """
-        SELECT EXISTS (
-            SELECT 1
-            FROM employees
-        );
-    """
-    )
+    with open("sql/check_table_row_exist.sql", "r") as query:
+        query = query.read()
+    cur.execute(query)
+    conn.commit()
     exists = cur.fetchone()[0]
     if not exists:
         logger.warning(
@@ -186,13 +174,9 @@ Use load to load csv file data to table
 def initialize_employee_table(database, user):
     conn = psycopg2.connect(f"dbname={database} user={user}")
     cur = conn.cursor()
-    cur.execute(
-        """CREATE TABLE employees (id SERIAL PRIMARY KEY, 
-        last_name VARCHAR(50) NOT NULL, 
-        first_name VARCHAR(50) NOT NULL, designation VARCHAR(50) NOT NULL,
-        email VARCHAR(50) NOT NULL UNIQUE, phone VARCHAR(50) NOT NULL);
-        """
-    )
+    with open("sql/initialize_employee_table.sql", "r") as query:
+        query = query.read()
+    cur.execute(query)
     conn.commit()
     logger.info("Table employees initialized")
     cur.close()
@@ -202,11 +186,9 @@ def initialize_employee_table(database, user):
 def initialize_leave_table(database, user):
     conn = psycopg2.connect(f"dbname={database} user={user}")
     cur = conn.cursor()
-    cur.execute(
-        """CREATE TABLE leaves (id SERIAL PRIMARY KEY, date DATE NOT NULL, 
-        reason VARCHAR(200) NOT NULL, employee_id INTEGER references employees(id));
-        """
-    )
+    with open("sql/initialize_leave_table.sql", "r") as query:
+        query = query.read()
+    cur.execute(query)
     conn.commit()
     logger.info("Table leaves initialized")
     cur.close()
@@ -217,22 +199,18 @@ def initialize_database(database, user):
     conn = psycopg2.connect(f"dbname=postgres user={user}")
     cur = conn.cursor()
     conn.autocommit = True
-    cur.execute(
-        """
-        SELECT EXISTS (
-            SELECT datname
-            FROM pg_catalog.pg_database
-            WHERE lower(datname) = lower(%s)
-        );
-    """,
-        (database,),
-    )
+    with open("sql/check_database_exist.sql", "r") as query:
+        query = query.read()
+    cur.execute(query, (database,))
+    conn.commit()
     exists = cur.fetchone()[0]
     if exists:
         logger.warning(f"Database {database} already exists")
         exit()
     else:
-        cur.execute("CREATE DATABASE %s;", (AsIs(database),))
+        with open("sql/initialize_database.sql", "r") as query:
+            query = query.read()
+        cur.execute(query, (AsIs(database),))
         logger.info("Database initialized")
 
     cur.close()
@@ -244,10 +222,9 @@ def insert_into_table_employees(
 ):
     conn = psycopg2.connect(f"dbname={database} user={user}")
     cur = conn.cursor()
-    cur.execute(
-        "INSERT INTO employees (last_name, first_name, designation, email, phone) VALUES (%s, %s, %s, %s, %s)",
-        (lname, fname, designation, email, phone),
-    )
+    with open("sql/insert_into_table_employees.sql", "r") as query:
+        query = query.read()
+    cur.execute(query, (lname, fname, designation, email, phone))
     conn.commit()
     cur.close()
     conn.close()
@@ -256,10 +233,17 @@ def insert_into_table_employees(
 def insert_into_table_leaves(database, user, employee_id, date, reason):
     conn = psycopg2.connect(f"dbname={database} user={user}")
     cur = conn.cursor()
-    cur.execute(
-        "INSERT INTO leaves (employee_id ,date, reason) VALUES (%s, %s, %s)",
-        (employee_id, date, reason),
-    )
+    with open("sql/check_leave_data_exist.sql", "r") as query:
+        query = query.read()
+    cur.execute(query, (employee_id, date))
+    conn.commit()
+    exists = cur.fetchone()[0]
+    if exists:
+        logger.error(f"Employee already taken leave on {date}")
+        exit()
+    with open("sql/insert_into_table_leaves.sql", "r") as query:
+        query = query.read()
+    cur.execute(query, (employee_id, date, reason))
     conn.commit()
     cur.close()
     conn.close()
@@ -270,10 +254,10 @@ def get_table_data(database, user, start=1, end=9223372036854775807):
     limit = end - start + 1
     conn = psycopg2.connect(f"dbname={database} user={user}")
     cur = conn.cursor()
-    cur.execute(
-        "SELECT last_name, first_name, designation, email, phone FROM employees LIMIT %s OFFSET %s;",
-        (limit, offset),
-    )
+    with open("sql/get_employee_data.sql", "r") as query:
+        query = query.read()
+    cur.execute(query, (limit, offset))
+    conn.commit()
     lines = cur.fetchall()
     cur.close()
     conn.close()
@@ -331,22 +315,20 @@ END:VCARD
 def evavulate_leaves_remaining(database, user, employee_id):
     conn = psycopg2.connect(f"dbname={database} user={user}")
     cur = conn.cursor()
-    cur.execute(
-        "SELECT first_name, last_name FROM employees WHERE id=%s",
-        (employee_id,),
-    )
+    with open("sql/get_employee_name.sql", "r") as query:
+        query = query.read()
+    cur.execute(query, (employee_id,))
+    conn.commit()
     name = cur.fetchall()
     if name:
         first_name, last_name = name[0]
     else:
         logger.error(f"No employee with id {employee_id}")
         exit()
-    cur.execute(
-        """SELECT COUNT(e.id) FROM employees e 
-        INNER JOIN leaves l ON e.id = l.employee_id WHERE e.id=%s
-        """,
-        (employee_id,),
-    )
+    with open("sql/get_leave_taken.sql", "r") as query:
+        query = query.read()
+    cur.execute(query, (employee_id,))
+    conn.commit()
     leaves_taken = cur.fetchone()
     if leaves_taken:
         leaves_taken_count = leaves_taken[0]

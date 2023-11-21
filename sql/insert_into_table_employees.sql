@@ -1,0 +1,1 @@
+INSERT INTO employees (last_name, first_name, designation, email, phone) VALUES (%s, %s, %s, %s, %s)
