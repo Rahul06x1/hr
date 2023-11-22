@@ -1,1 +1,0 @@
-SELECT last_name, first_name, designation, email, phone FROM employees LIMIT %s OFFSET %s;
