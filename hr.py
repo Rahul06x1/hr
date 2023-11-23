@@ -1,5 +1,6 @@
 import argparse
 import csv
+from datetime import date
 import logging
 import os
 import psycopg2
@@ -7,7 +8,10 @@ from psycopg2.extensions import AsIs
 import requests
 import sys
 
-class HRException(Exception): pass
+
+class HRException(Exception):
+    pass
+
 
 logger = None
 
@@ -54,7 +58,7 @@ def parse_args():
     )
     parser_generate.add_argument(
         "-e",
-        "--employee",
+        "--employee_id",
         help="employee id",
         type=int,
         nargs="?",
@@ -85,6 +89,29 @@ def parse_args():
         "leave_detail", help="evavulate leaves remaining of an employee"
     )
     parser_leave_detail.add_argument("employee_id", type=int, help="id of employee")
+    # export csv file with employees and leaves
+    parser_export = subparsers.add_parser(
+        "export", help="export csv file with employees and leaves"
+    )
+    parser_export.add_argument("-e", "--employee_id", type=int, help="employee id")
+    parser_export.add_argument(
+        "-f", "--filename", type=str, help="csv filename", default="leaves"
+    )
+    parser_export.add_argument(
+        "-d",
+        "--directory",
+        help="generate file in custom directory",
+        action="store",
+        type=str,
+        default="data",
+    )
+    parser_export.add_argument(
+        "-o",
+        "--overwrite",
+        help="overwrite existing directory",
+        action="store_true",
+        default=False,
+    )
 
     args = parser.parse_args()
     return args
@@ -102,9 +129,7 @@ def setup_logging(is_verbose):
     fhandler.setLevel(logging.DEBUG)
     handler.setLevel(log_level)
     handler.setFormatter(
-        logging.Formatter(
-            "[%(levelname)s] | %(filename)s:%(lineno)d | %(message)s"
-        )
+        logging.Formatter("[%(levelname)s] | %(filename)s:%(lineno)d | %(message)s")
     )
     fhandler.setFormatter(
         logging.Formatter(
@@ -117,8 +142,10 @@ def setup_logging(is_verbose):
 
 
 def insert_into_table_leaves(args):
+    check_employee_exist(args)
     conn = psycopg2.connect(f"dbname={args.database}")
     cur = conn.cursor()
+    # check if employee already taken leave on that date
     with open("sql/check_leave_data_exist.sql", "r") as query:
         query = query.read()
     cur.execute(query, (args.employee_id, args.date))
@@ -127,25 +154,71 @@ def insert_into_table_leaves(args):
     if exists:
         logger.error(f"Employee already taken leave on {args.date}")
         exit()
+
+    # check if employee reached the leave limit
+    (
+        first_name,
+        last_name,
+        leaves_taken,
+        leaves_remaining,
+        total_leaves,
+    ) = get_leave_detail(args)
+    print(leaves_taken)
+    print(total_leaves)
+    print(leaves_taken >= total_leaves)
+    if leaves_taken >= total_leaves:
+        logger.error(f"{first_name} {last_name} reached the leave limit {total_leaves}")
+        exit()
+
+    # insert leave data into table leaves
     with open("sql/insert_into_table_leaves.sql", "r") as query:
         query = query.read()
-    
+
     cur.execute(query, (args.employee_id, args.date, args.reason))
     conn.commit()
     cur.close()
     conn.close()
 
 
+def check_employee_exist(args, employee_id=None):
+    if not employee_id:
+        print("llllllllsss")
+        employee_id = args.employee_id
+    conn = psycopg2.connect(f"dbname={args.database}")
+    cur = conn.cursor()
+    query = "SELECT EXISTS(SELECT 1 FROM employees WHERE id = %s);"
+    cur.execute(query, (employee_id,))
+    conn.commit()
+    exist = cur.fetchall()
+    if not exist[0][0]:
+        logger.error(f"No employee with id {employee_id}")
+        exit()
+    cur.close()
+    conn.close()
+
+
+# def check_leave_exist(args):
+#     conn = psycopg2.connect(f"dbname={args.database}")
+#     cur = conn.cursor()
+#     query = "SELECT EXISTS(SELECT 1 FROM leave WHERE employee_id = %s);"
+#     cur.execute(query, (args.employee_id,))
+#     conn.commit()
+#     exist = cur.fetchall()
+#     cur.close()
+#     conn.close()
+#     return exist
+
+
 def get_table_data(args):
     conn = psycopg2.connect(f"dbname={args.database}")
     cur = conn.cursor()
-    if args.employee:
-        query = "SELECT last_name, first_name, designation, email, phone FROM employees WHERE id IN (%s);"
-        cur.execute(query, (args.employee,))
+    if args.employee_id:
+        query = "SELECT id, last_name, first_name, designation, email, phone FROM employees WHERE id IN (%s);"
+        cur.execute(query, (args.employee_id,))
     else:
-        query = "SELECT last_name, first_name, designation, email, phone FROM employees;"
+        query = "SELECT id, last_name, first_name, designation, email, phone FROM employees;"
         cur.execute(query)
-    
+
     conn.commit()
     lines = cur.fetchall()
     cur.close()
@@ -201,17 +274,39 @@ END:VCARD
     return data
 
 
-def get_leave_detail(args):
+def get_leave_detail(args, employee_id=None):
+    check_employee_exist(args, employee_id)
+    if not employee_id:
+        employee_id = args.employee_id
     conn = psycopg2.connect(f"dbname={args.database}")
     cur = conn.cursor()
     with open("sql/get_leave_detail.sql", "r") as query:
         query = query.read()
-    cur.execute(query, (args.employee_id,))
+    cur.execute(query, (employee_id,))
     conn.commit()
-    leaves_taken, first_name, last_name, total_leaves, leaves_remaining = cur.fetchall()[0]
+    leave_data = cur.fetchall()
+    if leave_data:
+        (
+            first_name,
+            last_name,
+            leaves_taken,
+            leaves_remaining,
+            total_leaves,
+        ) = leave_data[0]
+    else:
+        query = """SELECT e.first_name, e.last_name,d.no_of_leaves,
+        d.no_of_leaves as leaves_remaining
+        FROM employees e 
+        INNER JOIN designation d ON e.designation = d.designation 
+        WHERE e.id = %s
+        GROUP BY e.id, e.first_name, e.last_name,d.no_of_leaves;"""
+        cur.execute(query, (employee_id,))
+        conn.commit()
+        first_name, last_name, total_leaves, leaves_remaining = cur.fetchall()[0]
+        leaves_taken = 0
     cur.close()
     conn.close()
-    return leaves_taken, first_name, last_name, total_leaves, leaves_remaining
+    return first_name, last_name, leaves_taken, leaves_remaining, total_leaves
 
 
 def handle_initdb(args):
@@ -225,7 +320,7 @@ def handle_initdb(args):
         logger.info("Database initialized")
     except psycopg2.OperationalError as e:
         raise HRException(f"Database '{args.database}' doesn't exist")
-    
+
 
 def handle_load(args):
     con = psycopg2.connect(dbname=args.database)
@@ -239,7 +334,9 @@ def handle_load(args):
             cur.execute(query, (lname, fname, designation, email, phone))
         con.commit()
 
+
 def handle_generate(args):
+    check_employee_exist(args)
     row_count = 0
 
     if not os.path.exists(args.directory):
@@ -247,34 +344,41 @@ def handle_generate(args):
     elif not args.overwrite:
         logger.error(
             """
-Directory already exists
+Directory {args.directory} already exists
 Use -o to overwrite
 """
         )
         exit()
-    
+
     lines = get_table_data(args)
 
-    for lname, fname, designation, email, phone in lines:
+    for employee_id, lname, fname, designation, email, phone in lines:
         row_count += 1
-        data = generate_vcf_data(
-            lname, fname, designation, email, phone, args.address
-        )
+        data = generate_vcf_data(lname, fname, designation, email, phone, args.address)
         if args.qrcodedimension:
             dimension = args.qrcodedimension
             generate_qr_code(email, data, row_count, dimension)
         elif args.qrcode:
             generate_qr_code(email, data, row_count)
         generate_vcard(email, data, row_count)
-    logger.info("Generated Successfully")   
+    logger.info("Generated Successfully")
+
 
 def handle_leave(args):
     insert_into_table_leaves(args)
     logger.info("inserted to table leaves")
 
+
 def handle_leave_detail(args):
-    leaves_taken, first_name, last_name, total_leaves, leaves_remaining = get_leave_detail(args)
-    print(f"""
+    (
+        first_name,
+        last_name,
+        leaves_taken,
+        leaves_remaining,
+        total_leaves,
+    ) = get_leave_detail(args)
+    print(
+        f"""
 Name            : {first_name} {last_name}
 Leaves taken    : {leaves_taken}
 Leaves remaining: {leaves_remaining}
@@ -282,17 +386,55 @@ Total leaves    : {total_leaves}
 """
     )
 
+
+def handle_export(args):
+    print(args)
+    if not os.path.exists(args.directory):
+        os.makedirs(args.directory)
+    elif not args.overwrite:
+        logger.error(
+            f"""
+Directory {args.directory} already exists
+Use -o to overwrite
+"""
+        )
+        exit()
+    lines = get_table_data(args)
+    for id, lname, fname, designation, email, phone in lines:
+        if args.employee_id:
+            row = get_leave_detail(args, id)
+            with open(
+                os.path.join(
+                    "data",
+                    f"{args.filename}_{fname.lower()}_{lname.lower()}{date.today()}.csv",
+                ),
+                "a",
+            ) as csvfile:
+                csvwriter = csv.writer(csvfile)
+                csvwriter.writerow(row)
+        else:
+            row = get_leave_detail(args, id)
+            with open(
+                os.path.join("data", f"{args.filename}_{date.today()}.csv"), "a"
+            ) as csvfile:
+                csvwriter = csv.writer(csvfile)
+                csvwriter.writerow(row)
+
+
 def main():
     try:
         args = parse_args()
         setup_logging(args.verbose)
 
-        ops = {"initdb" : handle_initdb,
-               "load" : handle_load,
-               "generate" : handle_generate,
-               "leave" : handle_leave,
-               "leave_detail" : handle_leave_detail}
-        ops[args.mode](args)
+        mode = {
+            "initdb": handle_initdb,
+            "load": handle_load,
+            "generate": handle_generate,
+            "leave": handle_leave,
+            "leave_detail": handle_leave_detail,
+            "export": handle_export,
+        }
+        mode[args.mode](args)
     except HRException as e:
         logger.error("Program aborted, %s", e)
         sys.exit(-1)

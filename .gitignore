@@ -5,4 +5,5 @@ htmlcov
 .coverage
 *.pyc
 vcards
+data
 run.log
