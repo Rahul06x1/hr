@@ -105,13 +105,6 @@ def parse_args():
         type=str,
         default="data",
     )
-    parser_export.add_argument(
-        "-o",
-        "--overwrite",
-        help="overwrite existing directory",
-        action="store_true",
-        default=False,
-    )
 
     args = parser.parse_args()
     return args
@@ -352,7 +345,7 @@ Use -o to overwrite
 
     lines = get_table_data(args)
 
-    for employee_id, lname, fname, designation, email, phone in lines:
+    for id, lname, fname, designation, email, phone in lines:
         row_count += 1
         data = generate_vcf_data(lname, fname, designation, email, phone, args.address)
         if args.qrcodedimension:
@@ -366,7 +359,7 @@ Use -o to overwrite
 
 def handle_leave(args):
     insert_into_table_leaves(args)
-    logger.info("inserted to table leaves")
+    logger.info("Inserted to table leaves")
 
 
 def handle_leave_detail(args):
@@ -385,20 +378,12 @@ Leaves remaining: {leaves_remaining}
 Total leaves    : {total_leaves}
 """
     )
+    logger.info("Leave detail generated")
 
 
 def handle_export(args):
-    print(args)
     if not os.path.exists(args.directory):
         os.makedirs(args.directory)
-    elif not args.overwrite:
-        logger.error(
-            f"""
-Directory {args.directory} already exists
-Use -o to overwrite
-"""
-        )
-        exit()
     lines = get_table_data(args)
     for id, lname, fname, designation, email, phone in lines:
         if args.employee_id:
@@ -419,6 +404,7 @@ Use -o to overwrite
             ) as csvfile:
                 csvwriter = csv.writer(csvfile)
                 csvwriter.writerow(row)
+        logger.info("CSV exported")
 
 
 def main():
