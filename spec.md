@@ -7,29 +7,27 @@ file
 ## Input:
 
     Usage: 
-        hr.py [-h] [-v] {initdb,load,generate,leave,leaves_remaining}
+        hr.py [-h] [-v] [-d] {initdb,load,generate,leave,leave_detail,export}
 
     Positional Arguments:
-        {initdb,load,generate,leave,leaves_remaining}       action to perform
+        {initdb,load,generate,leave,leave_detail,export}    action to perform
         initdb                                              initialize database
         load                                                load csv file data to database
         generate                                            generate vcards
         leave                                               add leave to database
-        leaves_remaining                                    evavulate leaves remaining of an employee
+        leave_detail                                        evavulate leaves remaining of an employee
+        export                                              export csv file with employees and leaves
 
     Options:
         -h, --help                          show this help message and exit
         -v, --verbose                       print detailed logging
+        -d <database_name>                  name of custom database
 
 
 ### initdb
 
     Usage: 
-        hr.py initdb [-h] database username
-
-    Positional Arguments:
-        database    name of database
-        username    name of postgres user
+        hr.py initdb [-h]
 
     Options:
         -h, --help  show this help message and exit
@@ -37,12 +35,10 @@ file
 ### load
 
     Usage: 
-        hr.py load [-h] csv_file database username
+        hr.py load [-h] employees_file
 
     Positional arguments:
-        csv_file    name of csv file
-        database    name of database
-        username    name of postgres user
+        employees_file  name of csv file
 
     Options:
         -h, --help  show this help message and exit
@@ -51,49 +47,53 @@ file
 ### generate
 
     Usage: 
-        hr.py generate database username
+        hr.py generate [-h] [-o] [-q] [-x] [-e [EMPLOYEE_ID]] [-d DIRECTORY] [-a ADDRESS]
 
-    Positional arguments:
-        database                            name of database
-        username                            name of postgres user
     Optional Arguments:
         -h, --help                          show this help message and exit
-        -v, --verbose                       print detailed logging
         -o, --overwrite                     overwrite existing directory
         -q, --qrcode                        generates qrcode
         -x <dimension>                      set custom qr code dimension
-        -r <start> <end>                    generate files inbetween start and end of line numbers
+        -e <employee_id>                    employee id
         -d <custom_directory_name>          generate files in custom directory
         -a, --address <custom_address>      set custom address
-        -n, --number <x>                    generate x number of records
 
 ### leave
 
     Usage: 
-        hr.py leave [-h] employee_id date reason database username
+        hr.py leave [-h] employee_id date reason
 
     Positional Arguments:
         employee_id  employee id of absentee
         date         date of absence
         reason       reason of absence
-        database     name of database
-        username     name of postgres user
+
 
     Options:
         -h, --help   show this help message and exit
 
-### leaves_remaining
+### leave_detail
 
     Usage: 
-        hr.py leaves_remaining [-h] employee_id database username
+        hr.py leave_detail [-h] employee_id
 
     Positional Arguments:
-        employee_id  id of employee
-        database     name of database
-        username     name of postgres user
+        employee_id  employee id
 
     Options:
         -h, --help   show this help message and exit
+
+### export
+
+    Usage: 
+        hr.py export [-h] [-e EMPLOYEE_ID] [-f FILENAME] [-d DIRECTORY]
+
+    Options:
+        -h, --help            show this help message and exit
+        -e <employee_id>      employee id
+        -f <filename>         csv filename
+        -d <directory>        generate file in custom directory
+
 
 Each row in the csv_file should have the following columns
 

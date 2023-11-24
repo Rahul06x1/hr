@@ -28,7 +28,9 @@ def parse_args():
         action="store_true",
         default=False,
     )
-    parser.add_argument("--database", type=str, help="name of database", default="hr")
+    parser.add_argument(
+        "-d", "--database", type=str, help="name of custom database", default="hr"
+    )
 
     subparsers = parser.add_subparsers(dest="mode", help="action to perform")
     # initdb
@@ -88,7 +90,7 @@ def parse_args():
     parser_leave_detail = subparsers.add_parser(
         "leave_detail", help="evavulate leaves remaining of an employee"
     )
-    parser_leave_detail.add_argument("employee_id", type=int, help="id of employee")
+    parser_leave_detail.add_argument("employee_id", type=int, help="employee id")
     # export csv file with employees and leaves
     parser_export = subparsers.add_parser(
         "export", help="export csv file with employees and leaves"
@@ -188,18 +190,6 @@ def check_employee_exist(args, employee_id=None):
         exit()
     cur.close()
     conn.close()
-
-
-# def check_leave_exist(args):
-#     conn = psycopg2.connect(f"dbname={args.database}")
-#     cur = conn.cursor()
-#     query = "SELECT EXISTS(SELECT 1 FROM leave WHERE employee_id = %s);"
-#     cur.execute(query, (args.employee_id,))
-#     conn.commit()
-#     exist = cur.fetchall()
-#     cur.close()
-#     conn.close()
-#     return exist
 
 
 def get_table_data(args):
@@ -404,7 +394,7 @@ def handle_export(args):
             ) as csvfile:
                 csvwriter = csv.writer(csvfile)
                 csvwriter.writerow(row)
-        logger.info("CSV exported")
+    logger.info("CSV exported")
 
 
 def main():
