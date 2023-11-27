@@ -143,8 +143,6 @@ def setup_logging(is_verbose):
 
 def add_leaves(args):
     check_employee_exist(args)
-    conn = psycopg2.connect(dbname=args.database)
-    cur = conn.cursor()
     # check if employee already taken leave on that date
     with open("sql/check_leave_data_exist.sql", "r") as query:
         query = query.read()
@@ -164,10 +162,12 @@ def add_leaves(args):
         total_leaves,
     ) = get_leave_detail(args)
     if leaves_taken >= total_leaves:
-        logger.error("%s %s reached the leave limit %s", first_name, last_name, total_leaves)
+        logger.error(
+            "%s %s reached the leave limit %s", first_name, last_name, total_leaves
+        )
         exit()
 
-    # insert leave data into table leaves
+    # add leave to database
     with open("sql/add_leaves.sql", "r") as query:
         query = query.read()
 
@@ -180,8 +180,6 @@ def add_leaves(args):
 def check_employee_exist(args, employee_id=None):
     if not employee_id:
         employee_id = args.employee_id
-    conn = psycopg2.connect(dbname=args.database)
-    cur = conn.cursor()
     query = "SELECT EXISTS(SELECT 1 FROM employees WHERE id = %s);"
     cur.execute(query, (employee_id,))
     conn.commit()
@@ -189,13 +187,9 @@ def check_employee_exist(args, employee_id=None):
     if not exist[0][0]:
         logger.error("No employee with id %s", employee_id)
         exit()
-    cur.close()
-    conn.close()
 
 
 def get_table_data(args):
-    conn = psycopg2.connect(dbname=args.database)
-    cur = conn.cursor()
     if args.employee_id:
         check_employee_exist(args)
         query = "SELECT id, last_name, first_name, designation, email, phone FROM employees WHERE id IN (%s);"
@@ -206,8 +200,6 @@ def get_table_data(args):
 
     conn.commit()
     lines = cur.fetchall()
-    cur.close()
-    conn.close()
     return lines
 
 
@@ -263,8 +255,6 @@ def get_leave_detail(args, employee_id=None):
     check_employee_exist(args, employee_id)
     if not employee_id:
         employee_id = args.employee_id
-    conn = psycopg2.connect(dbname=args.database)
-    cur = conn.cursor()
     with open("sql/get_leave_detail.sql", "r") as query:
         query = query.read()
     cur.execute(query, (employee_id,))
@@ -289,8 +279,6 @@ def get_leave_detail(args, employee_id=None):
         conn.commit()
         first_name, last_name, total_leaves, leaves_remaining = cur.fetchall()[0]
         leaves_taken = 0
-    cur.close()
-    conn.close()
     return first_name, last_name, leaves_taken, leaves_remaining, total_leaves
 
 
@@ -298,18 +286,14 @@ def handle_initdb(args):
     with open("sql/initialize_database.sql") as f:
         sql = f.read()
     try:
-        con = psycopg2.connect(dbname=args.database)
-        cur = con.cursor()
         cur.execute(sql)
-        con.commit()
+        conn.commit()
         logger.info("Database initialized")
     except psycopg2.OperationalError as e:
-        raise HRException("Database '%s' doesn't exist", args.database)
+        logger.error("Database %s doesn't exist", args.database)
 
 
 def handle_import(args):
-    con = psycopg2.connect(dbname=args.database)
-    cur = con.cursor()
     with open(args.employees_file) as f:
         reader = csv.reader(f)
         for lname, fname, designation, email, phone in reader:
@@ -317,7 +301,7 @@ def handle_import(args):
             with open("sql/add_employees.sql", "r") as query:
                 query = query.read()
             cur.execute(query, (lname, fname, designation, email, phone))
-        con.commit()
+        conn.commit()
     logger.info("csv file imported")
 
 
@@ -328,9 +312,10 @@ def handle_generate(args):
     elif not args.overwrite:
         logger.error(
             """
-Directory {args.directory} already exists
+Directory %s already exists
 Use -o to overwrite
-"""
+""",
+            args.directory,
         )
         exit()
 
@@ -400,6 +385,7 @@ def handle_export(args):
 
 def main():
     try:
+        global conn, cur
         args = parse_args()
         setup_logging(args.verbose)
 
@@ -411,7 +397,11 @@ def main():
             "leave_detail": handle_leave_detail,
             "export": handle_export,
         }
+        conn = psycopg2.connect(dbname=args.database)
+        cur = conn.cursor()
         mode[args.mode](args)
+        cur.close()
+        conn.close()
     except HRException as e:
         logger.error("Program aborted, %s", e)
         sys.exit(-1)
