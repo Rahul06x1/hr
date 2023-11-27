@@ -33,16 +33,22 @@ def parse_args():
 
     subparsers = parser.add_subparsers(dest="mode", help="action to perform")
     # initdb
-    parser_initdb = subparsers.add_parser("initdb", description="Initialize database")
+    parser_initdb = subparsers.add_parser(
+        "initdb", help="Initialize database", description="Initialize database"
+    )
 
     # import csv file data to database
     parser_import = subparsers.add_parser(
-        "import", description="Import csv file data to database"
+        "import",
+        help="Import csv file data to database",
+        description="Import csv file data to database",
     )
     parser_import.add_argument("employees_file", type=str, help="name of csv file")
 
     # generate vcards
-    parser_generate = subparsers.add_parser("generate", description="Generate vCards")
+    parser_generate = subparsers.add_parser(
+        "generate", help="Generate vCards", description="Generate vCards"
+    )
     parser_generate.add_argument(
         "-o",
         "--overwrite",
@@ -85,20 +91,26 @@ def parse_args():
     )
 
     # create leave
-    parser_leave = subparsers.add_parser("leave", description="Add leave to database")
+    parser_leave = subparsers.add_parser(
+        "leave", help="Add leave to database", description="Add leave to database"
+    )
     parser_leave.add_argument("employee_id", type=int, help="employee id of absentee")
     parser_leave.add_argument("date", type=str, help="date of absence")
     parser_leave.add_argument("reason", type=str, help="reason of absence")
 
     # evavulate leaves remaining
     parser_leave_detail = subparsers.add_parser(
-        "leave_detail", description="Display leave details of an employee"
+        "leave_detail",
+        help="Display leave details of an employee",
+        description="Display leave details of an employee",
     )
     parser_leave_detail.add_argument("employee_id", type=int, help="employee id")
 
     # export csv file with employees and leaves
     parser_export = subparsers.add_parser(
-        "export", description="Export csv file with employees and their leaves details"
+        "export",
+        help="Export csv file with employees and their leaves details",
+        description="Export csv file with employees and their leaves details",
     )
     parser_export.add_argument("-e", "--employee_id", type=int, help="employee id")
     parser_export.add_argument(
@@ -192,7 +204,7 @@ def check_employee_exist(args, employee_id=None):
 def get_table_data(args):
     if args.employee_id:
         check_employee_exist(args)
-        query = "SELECT id, last_name, first_name, designation, email, phone FROM employees WHERE id IN (%s);"
+        query = "SELECT id, last_name, first_name, designation, email, phone FROM employees WHERE id = %s;"
         cur.execute(query, (args.employee_id,))
     else:
         query = "SELECT id, last_name, first_name, designation, email, phone FROM employees;"
