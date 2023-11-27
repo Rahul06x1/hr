@@ -414,8 +414,8 @@ def main():
         mode[args.mode](args)
         cur.close()
         conn.close()
-    except HRException as e:
-        logger.error("Program aborted, %s", e)
+    except (Exception, psycopg2.DatabaseError) as error:
+        logger.error("Program aborted - %s", error)
         sys.exit(-1)
 
 
