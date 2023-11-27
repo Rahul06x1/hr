@@ -33,13 +33,16 @@ def parse_args():
 
     subparsers = parser.add_subparsers(dest="mode", help="action to perform")
     # initdb
-    parser_initdb = subparsers.add_parser("initdb", help="initialize database")
+    parser_initdb = subparsers.add_parser("initdb", description="Initialize database")
 
     # import csv file data to database
-    parser_import = subparsers.add_parser("import", help="import csv file data to database")
+    parser_import = subparsers.add_parser(
+        "import", description="Import csv file data to database"
+    )
     parser_import.add_argument("employees_file", type=str, help="name of csv file")
+
     # generate vcards
-    parser_generate = subparsers.add_parser("generate", help="generate vcards")
+    parser_generate = subparsers.add_parser("generate", description="Generate vCards")
     parser_generate.add_argument(
         "-o",
         "--overwrite",
@@ -82,20 +85,20 @@ def parse_args():
     )
 
     # create leave
-    parser_leave = subparsers.add_parser("leave", help="add leave to database")
+    parser_leave = subparsers.add_parser("leave", description="Add leave to database")
     parser_leave.add_argument("employee_id", type=int, help="employee id of absentee")
     parser_leave.add_argument("date", type=str, help="date of absence")
     parser_leave.add_argument("reason", type=str, help="reason of absence")
 
     # evavulate leaves remaining
     parser_leave_detail = subparsers.add_parser(
-        "leave_detail", help="evavulate leaves remaining of an employee"
+        "leave_detail", description="Display leave details of an employee"
     )
     parser_leave_detail.add_argument("employee_id", type=int, help="employee id")
 
     # export csv file with employees and leaves
     parser_export = subparsers.add_parser(
-        "export", help="export csv file with employees and leaves"
+        "export", description="Export csv file with employees and their leaves details"
     )
     parser_export.add_argument("-e", "--employee_id", type=int, help="employee id")
     parser_export.add_argument(
@@ -140,7 +143,7 @@ def setup_logging(is_verbose):
 
 def add_leaves(args):
     check_employee_exist(args)
-    conn = psycopg2.connect(f"dbname={args.database}")
+    conn = psycopg2.connect(dbname=args.database)
     cur = conn.cursor()
     # check if employee already taken leave on that date
     with open("sql/check_leave_data_exist.sql", "r") as query:
@@ -149,7 +152,7 @@ def add_leaves(args):
     conn.commit()
     exists = cur.fetchone()[0]
     if exists:
-        logger.error(f"Employee already taken leave on {args.date}")
+        logger.error("Employee already taken leave on %s", args.date)
         exit()
 
     # check if employee reached the leave limit
@@ -161,7 +164,7 @@ def add_leaves(args):
         total_leaves,
     ) = get_leave_detail(args)
     if leaves_taken >= total_leaves:
-        logger.error(f"{first_name} {last_name} reached the leave limit {total_leaves}")
+        logger.error("%s %s reached the leave limit %s", first_name, last_name, total_leaves)
         exit()
 
     # insert leave data into table leaves
@@ -177,21 +180,21 @@ def add_leaves(args):
 def check_employee_exist(args, employee_id=None):
     if not employee_id:
         employee_id = args.employee_id
-    conn = psycopg2.connect(f"dbname={args.database}")
+    conn = psycopg2.connect(dbname=args.database)
     cur = conn.cursor()
     query = "SELECT EXISTS(SELECT 1 FROM employees WHERE id = %s);"
     cur.execute(query, (employee_id,))
     conn.commit()
     exist = cur.fetchall()
     if not exist[0][0]:
-        logger.error(f"No employee with id {employee_id}")
+        logger.error("No employee with id %s", employee_id)
         exit()
     cur.close()
     conn.close()
 
 
 def get_table_data(args):
-    conn = psycopg2.connect(f"dbname={args.database}")
+    conn = psycopg2.connect(dbname=args.database)
     cur = conn.cursor()
     if args.employee_id:
         check_employee_exist(args)
@@ -260,7 +263,7 @@ def get_leave_detail(args, employee_id=None):
     check_employee_exist(args, employee_id)
     if not employee_id:
         employee_id = args.employee_id
-    conn = psycopg2.connect(f"dbname={args.database}")
+    conn = psycopg2.connect(dbname=args.database)
     cur = conn.cursor()
     with open("sql/get_leave_detail.sql", "r") as query:
         query = query.read()
@@ -301,7 +304,7 @@ def handle_initdb(args):
         con.commit()
         logger.info("Database initialized")
     except psycopg2.OperationalError as e:
-        raise HRException(f"Database '{args.database}' doesn't exist")
+        raise HRException("Database '%s' doesn't exist", args.database)
 
 
 def handle_import(args):
