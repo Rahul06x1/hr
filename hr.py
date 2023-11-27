@@ -35,9 +35,9 @@ def parse_args():
     # initdb
     parser_initdb = subparsers.add_parser("initdb", help="initialize database")
 
-    # load
-    parser_load = subparsers.add_parser("load", help="load csv file data to database")
-    parser_load.add_argument("employees_file", type=str, help="name of csv file")
+    # import csv file data to database
+    parser_import = subparsers.add_parser("import", help="import csv file data to database")
+    parser_import.add_argument("employees_file", type=str, help="name of csv file")
     # generate vcards
     parser_generate = subparsers.add_parser("generate", help="generate vcards")
     parser_generate.add_argument(
@@ -304,7 +304,7 @@ def handle_initdb(args):
         raise HRException(f"Database '{args.database}' doesn't exist")
 
 
-def handle_load(args):
+def handle_import(args):
     con = psycopg2.connect(dbname=args.database)
     cur = con.cursor()
     with open(args.employees_file) as f:
@@ -315,7 +315,7 @@ def handle_load(args):
                 query = query.read()
             cur.execute(query, (lname, fname, designation, email, phone))
         con.commit()
-    logger.info("csv file loaded")
+    logger.info("csv file imported")
 
 
 def handle_generate(args):
@@ -402,7 +402,7 @@ def main():
 
         mode = {
             "initdb": handle_initdb,
-            "load": handle_load,
+            "import": handle_import,
             "generate": handle_generate,
             "leave": handle_leave,
             "leave_detail": handle_leave_detail,
