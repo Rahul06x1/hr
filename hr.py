@@ -4,7 +4,6 @@ from datetime import date
 import logging
 import os
 import psycopg2
-from psycopg2.extensions import AsIs
 import requests
 import sys
 
@@ -81,16 +80,19 @@ def parse_args():
         type=str,
         default="100 Flat Grape Dr.;Fresno;CA;95555;United States of America",
     )
+
     # create leave
     parser_leave = subparsers.add_parser("leave", help="add leave to database")
     parser_leave.add_argument("employee_id", type=int, help="employee id of absentee")
     parser_leave.add_argument("date", type=str, help="date of absence")
     parser_leave.add_argument("reason", type=str, help="reason of absence")
+
     # evavulate leaves remaining
     parser_leave_detail = subparsers.add_parser(
         "leave_detail", help="evavulate leaves remaining of an employee"
     )
     parser_leave_detail.add_argument("employee_id", type=int, help="employee id")
+
     # export csv file with employees and leaves
     parser_export = subparsers.add_parser(
         "export", help="export csv file with employees and leaves"
@@ -158,9 +160,6 @@ def insert_into_table_leaves(args):
         leaves_remaining,
         total_leaves,
     ) = get_leave_detail(args)
-    print(leaves_taken)
-    print(total_leaves)
-    print(leaves_taken >= total_leaves)
     if leaves_taken >= total_leaves:
         logger.error(f"{first_name} {last_name} reached the leave limit {total_leaves}")
         exit()
@@ -177,7 +176,6 @@ def insert_into_table_leaves(args):
 
 def check_employee_exist(args, employee_id=None):
     if not employee_id:
-        print("llllllllsss")
         employee_id = args.employee_id
     conn = psycopg2.connect(f"dbname={args.database}")
     cur = conn.cursor()
@@ -196,6 +194,7 @@ def get_table_data(args):
     conn = psycopg2.connect(f"dbname={args.database}")
     cur = conn.cursor()
     if args.employee_id:
+        check_employee_exist(args)
         query = "SELECT id, last_name, first_name, designation, email, phone FROM employees WHERE id IN (%s);"
         cur.execute(query, (args.employee_id,))
     else:
@@ -316,12 +315,11 @@ def handle_load(args):
                 query = query.read()
             cur.execute(query, (lname, fname, designation, email, phone))
         con.commit()
+    logger.info("csv file loaded")
 
 
 def handle_generate(args):
-    check_employee_exist(args)
     row_count = 0
-
     if not os.path.exists(args.directory):
         os.makedirs(args.directory)
     elif not args.overwrite:
