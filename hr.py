@@ -138,7 +138,7 @@ def setup_logging(is_verbose):
     logger.addHandler(fhandler)
 
 
-def insert_into_table_leaves(args):
+def add_leaves(args):
     check_employee_exist(args)
     conn = psycopg2.connect(f"dbname={args.database}")
     cur = conn.cursor()
@@ -165,7 +165,7 @@ def insert_into_table_leaves(args):
         exit()
 
     # insert leave data into table leaves
-    with open("sql/insert_into_table_leaves.sql", "r") as query:
+    with open("sql/add_leaves.sql", "r") as query:
         query = query.read()
 
     cur.execute(query, (args.employee_id, args.date, args.reason))
@@ -311,7 +311,7 @@ def handle_load(args):
         reader = csv.reader(f)
         for lname, fname, designation, email, phone in reader:
             logger.debug("Inserting %s", email)
-            with open("sql/insert_into_table_employees.sql", "r") as query:
+            with open("sql/add_employees.sql", "r") as query:
                 query = query.read()
             cur.execute(query, (lname, fname, designation, email, phone))
         con.commit()
@@ -346,8 +346,8 @@ Use -o to overwrite
 
 
 def handle_leave(args):
-    insert_into_table_leaves(args)
-    logger.info("Inserted to table leaves")
+    add_leaves(args)
+    logger.info("Leave added")
 
 
 def handle_leave_detail(args):
