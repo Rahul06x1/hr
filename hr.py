@@ -7,6 +7,8 @@ import psycopg2
 import requests
 import sys
 
+import configparser
+
 
 class HRException(Exception):
     pass
@@ -14,8 +16,16 @@ class HRException(Exception):
 
 logger = None
 
+def update_config(args):
+    config['DATABASE']['dbname'] = args.database
+    with open('config.ini', 'w') as configfile:
+        config.write(configfile)
 
 def parse_args():
+    global config
+    config = configparser.ConfigParser()
+    config.read('config.ini')
+
     parser = argparse.ArgumentParser(
         prog="hr.py",
         description="Generates vcard and qrcode for each employee from csv file",
@@ -28,7 +38,7 @@ def parse_args():
         default=False,
     )
     parser.add_argument(
-        "-d", "--database", type=str, help="name of custom database", default="hr"
+        "-d", "--database", type=str, help="name of custom database", default=config.get('DATABASE', 'dbname')
     )
 
     subparsers = parser.add_subparsers(dest="mode", help="action to perform")
@@ -406,6 +416,7 @@ def main():
         global conn, cur
         args = parse_args()
         setup_logging(args.verbose)
+        update_config(args)
 
         mode = {
             "initdb": handle_initdb,
