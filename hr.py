@@ -164,7 +164,6 @@ def setup_logging(is_verbose):
 
 
 def add_leaves(args):
-    check_employee_exist(args)
     # check if employee already taken leave on that date
     with open("sql/check_leave_data_exist.sql", "r") as query:
         query = query.read()
@@ -199,21 +198,8 @@ def add_leaves(args):
     conn.close()
 
 
-def check_employee_exist(args, employee_id=None):
-    if not employee_id:
-        employee_id = args.employee_id
-    query = "SELECT EXISTS(SELECT 1 FROM employees WHERE id = %s);"
-    cur.execute(query, (employee_id,))
-    conn.commit()
-    exist = cur.fetchall()
-    if not exist[0][0]:
-        logger.error("No employee with id %s", employee_id)
-        exit()
-
-
 def get_table_data(args):
     if args.employee_id:
-        check_employee_exist(args)
         query = "SELECT id, last_name, first_name, designation, email, phone FROM employees WHERE id = %s;"
         cur.execute(query, (args.employee_id,))
     else:
@@ -222,6 +208,9 @@ def get_table_data(args):
 
     conn.commit()
     lines = cur.fetchall()
+    if not lines:
+        logger.error('No employee with id %s',args.employee_id)
+        sys.exit(-1)
     return lines
 
 
@@ -274,34 +263,37 @@ END:VCARD
 
 
 def get_leave_detail(args, employee_id=None):
-    check_employee_exist(args, employee_id)
-    if not employee_id:
-        employee_id = args.employee_id
-    with open("sql/get_leave_detail.sql", "r") as query:
-        query = query.read()
-    cur.execute(query, (employee_id,))
-    conn.commit()
-    leave_data = cur.fetchall()
-    if leave_data:
-        (
-            first_name,
-            last_name,
-            leaves_taken,
-            leaves_remaining,
-            total_leaves,
-        ) = leave_data[0]
-    else:
-        query = """SELECT e.first_name, e.last_name,d.no_of_leaves,
-        d.no_of_leaves as leaves_remaining
-        FROM employees e 
-        INNER JOIN designation d ON e.designation = d.designation 
-        WHERE e.id = %s
-        GROUP BY e.id, e.first_name, e.last_name,d.no_of_leaves;"""
+    try:
+        if not employee_id:
+            employee_id = args.employee_id
+        with open("sql/get_leave_detail.sql", "r") as query:
+            query = query.read()
         cur.execute(query, (employee_id,))
         conn.commit()
-        first_name, last_name, total_leaves, leaves_remaining = cur.fetchall()[0]
-        leaves_taken = 0
-    return first_name, last_name, leaves_taken, leaves_remaining, total_leaves
+        leave_data = cur.fetchall()
+        if leave_data:
+            (
+                first_name,
+                last_name,
+                leaves_taken,
+                leaves_remaining,
+                total_leaves,
+            ) = leave_data[0]
+        else:
+            query = """SELECT e.first_name, e.last_name,d.no_of_leaves,
+            d.no_of_leaves as leaves_remaining
+            FROM employees e 
+            INNER JOIN designation d ON e.designation = d.designation 
+            WHERE e.id = %s
+            GROUP BY e.id, e.first_name, e.last_name,d.no_of_leaves;"""
+            cur.execute(query, (employee_id,))
+            conn.commit()
+            first_name, last_name, total_leaves, leaves_remaining = cur.fetchall()[0]
+            leaves_taken = 0
+        return first_name, last_name, leaves_taken, leaves_remaining, total_leaves
+    except Exception as e:
+        logger.error('No employee with id %s', employee_id)
+        sys.exit(-1)
 
 
 def handle_initdb(args):
