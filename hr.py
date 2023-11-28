@@ -379,7 +379,7 @@ def handle_export(args):
             with open(
                 os.path.join(
                     "data",
-                    f"{args.filename}_{fname.lower()}_{lname.lower()}{date.today()}.csv",
+                    f"{args.filename}_{fname.lower()}_{lname.lower()}_{date.today()}.csv",
                 ),
                 "a",
             ) as csvfile:
@@ -392,7 +392,10 @@ def handle_export(args):
             ) as csvfile:
                 csvwriter = csv.writer(csvfile)
                 csvwriter.writerow(row)
-    logger.info("CSV exported")
+    if args.employee_id:
+        logger.info("CSV exported as %s_%s_%s_%s.csv",args.filename,fname.lower(),lname.lower(),date.today())
+    else:
+        logger.info("CSV exported as %s_%s.csv",args.filename, date.today())
 
 
 def main():
