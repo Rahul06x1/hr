@@ -333,6 +333,9 @@ Use -o to overwrite
 
     lines = get_table_data(args)
 
+    if args.qrcodedimension or args.qrcode:
+        logger.info("Generating qrcode. Please wait a while...")
+
     for id, lname, fname, designation, email, phone in lines:
         row_count += 1
         data = generate_vcf_data(lname, fname, designation, email, phone, args.address)
