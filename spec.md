@@ -7,12 +7,12 @@ file
 ## Input:
 
     Usage: 
-        hr.py [-h] [-v] [-d] {initdb,load,generate,leave,leave_detail,export}
+        hr.py [-h] [-v] [-d] {initdb,import,generate,leave,leave_detail,export}
 
     Positional Arguments:
-        {initdb,load,generate,leave,leave_detail,export}    action to perform
+        {initdb,import,generate,leave,leave_detail,export}    action to perform
         initdb                                              initialize database
-        load                                                load csv file data to database
+        import                                              import csv file data to database
         generate                                            generate vcards
         leave                                               add leave to database
         leave_detail                                        evavulate leaves remaining of an employee
@@ -32,10 +32,10 @@ file
     Options:
         -h, --help  show this help message and exit
 
-### load
+### import
 
     Usage: 
-        hr.py load [-h] employees_file
+        hr.py import [-h] employees_file
 
     Positional arguments:
         employees_file  name of csv file
