@@ -1,13 +1,13 @@
 import argparse
+import configparser
 import csv
 from datetime import date
 import logging
 import os
-import psycopg2
-import requests
 import sys
 
-import configparser
+import psycopg2
+import requests
 
 
 class HRException(Exception):
