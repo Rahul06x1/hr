@@ -1,5 +1,4 @@
 import datetime
-import logging
 from typing import List
 
 from sqlalchemy import String, Integer, Date, create_engine, ForeignKey, UniqueConstraint, select
@@ -34,7 +33,6 @@ class Leave(HRDBBase):
     reason: Mapped[str] = mapped_column(String(200))
 
 def create_all(db_uri):
-    logger = logging.getLogger("HR")
     engine = create_engine(db_uri)
     HRDBBase.metadata.create_all(engine)
 
