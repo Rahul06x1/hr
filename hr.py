@@ -169,11 +169,12 @@ def setup_logging(is_verbose):
 
 
 def add_leaves(args):
-    db_uri = f"postgresql:///{args.database}"
-    session = db.get_session(db_uri)
-
     # check if employee already taken leave on that date
-    exist = session.query(exists().where(db.Leave.employee_id==args.employee_id, db.Leave.date==args.date)).scalar()
+    exist = session.query(
+        exists().where(
+            db.Leave.employee_id == args.employee_id, db.Leave.date == args.date
+        )
+    ).scalar()
     if exist:
         logger.error("Employee already taken leave on %s", args.date)
         exit()
@@ -199,12 +200,24 @@ def add_leaves(args):
 
 
 def get_table_data(args):
-    db_uri = f"postgresql:///{args.database}"
-    session = db.get_session(db_uri)
     if args.employee_id:
-        q = sa.select(db.Employee.id,db.Employee.last_name,db.Employee.first_name,db.Employee.title_id,db.Employee.email,db.Employee.phone).where(db.Employee.id==args.employee_id)
+        q = sa.select(
+            db.Employee.id,
+            db.Employee.last_name,
+            db.Employee.first_name,
+            db.Employee.title_id,
+            db.Employee.email,
+            db.Employee.phone,
+        ).where(db.Employee.id == args.employee_id)
     else:
-        q = sa.select(db.Employee.id,db.Employee.last_name,db.Employee.first_name,db.Employee.title_id,db.Employee.email,db.Employee.phone)
+        q = sa.select(
+            db.Employee.id,
+            db.Employee.last_name,
+            db.Employee.first_name,
+            db.Employee.title_id,
+            db.Employee.email,
+            db.Employee.phone,
+        )
 
     lines = session.execute(q).fetchall()
     if not lines:
@@ -262,13 +275,28 @@ END:VCARD
 
 
 def get_leave_detail(args, employee_id=None):
-    db_uri = f"postgresql:///{args.database}"
-    session = db.get_session(db_uri)
     if not employee_id:
         employee_id = args.employee_id
 
-    q = sa.select(db.Employee.first_name,db.Employee.last_name,sa.func.count(db.Employee.id),
-        db.Designation.max_leaves).where(db.Employee.id==employee_id,db.Employee.id==db.Leave.employee_id,db.Employee.title_id==db.Designation.id).group_by(db.Employee.id, db.Employee.first_name, db.Employee.last_name,db.Designation.max_leaves)
+    q = (
+        sa.select(
+            db.Employee.first_name,
+            db.Employee.last_name,
+            sa.func.count(db.Employee.id),
+            db.Designation.max_leaves,
+        )
+        .where(
+            db.Employee.id == employee_id,
+            db.Employee.id == db.Leave.employee_id,
+            db.Employee.title_id == db.Designation.id,
+        )
+        .group_by(
+            db.Employee.id,
+            db.Employee.first_name,
+            db.Employee.last_name,
+            db.Designation.max_leaves,
+        )
+    )
     leave_detail = session.execute(q).fetchall()
     if leave_detail:
         (
@@ -279,8 +307,20 @@ def get_leave_detail(args, employee_id=None):
         ) = leave_detail[0]
         leaves_remaining = total_leaves - leaves_taken
     else:
-        q = sa.select(db.Employee.first_name,db.Employee.last_name,
-        db.Designation.max_leaves).where(db.Employee.id==employee_id,db.Employee.title_id==db.Designation.id).group_by(db.Employee.id, db.Employee.first_name, db.Employee.last_name,db.Designation.max_leaves)
+        q = (
+            sa.select(
+                db.Employee.first_name, db.Employee.last_name, db.Designation.max_leaves
+            )
+            .where(
+                db.Employee.id == employee_id, db.Employee.title_id == db.Designation.id
+            )
+            .group_by(
+                db.Employee.id,
+                db.Employee.first_name,
+                db.Employee.last_name,
+                db.Designation.max_leaves,
+            )
+        )
         leave_detail = session.execute(q).fetchall()
         (
             first_name,
@@ -293,7 +333,6 @@ def get_leave_detail(args, employee_id=None):
 
 
 def handle_initdb(args):
-    db_uri = f"postgresql:///{args.database}"
     db.create_all(db_uri)
     session = db.get_session(db_uri)
     d1 = db.Designation(title="Staff Engineer", max_leaves=20)
@@ -301,30 +340,24 @@ def handle_initdb(args):
     d3 = db.Designation(title="Junior Engineer", max_leaves=12)
     d4 = db.Designation(title="Tech. Lead", max_leaves=12)
     d5 = db.Designation(title="Project Manager", max_leaves=15)
-    session.add(d1)
-    session.add(d2)
-    session.add(d3)
-    session.add(d4)
-    session.add(d5)
+    session.add_all([d1, d2, d3, d4, d5])
     session.commit()
     logger.info("Initialized database")
 
 
 def handle_import(args):
-    db_uri = f"postgresql:///{args.database}"
-    session = db.get_session(db_uri)
     with open(args.employees_file) as f:
         reader = csv.reader(f)
         for lname, fname, title, email, phone in reader:
-            q = sa.select(db.Designation).where(db.Designation.title==title)
+            q = sa.select(db.Designation).where(db.Designation.title == title)
             designation = session.execute(q).scalar_one()
             logger.debug("Inserting %s", email)
             employee = db.Employee(
-                last_name = lname,
-                first_name = fname,
-                email = email,
-                phone = phone,
-                title = designation
+                last_name=lname,
+                first_name=fname,
+                email=email,
+                phone=phone,
+                title=designation,
             )
             session.add(employee)
         session.commit()
@@ -405,9 +438,12 @@ def handle_export(args):
 
 
 def main():
+    global db_uri, session
     args = parse_args()
     setup_logging(args.verbose)
     update_config(args)
+    db_uri = f"postgresql:///{args.database}"
+    session = db.get_session(db_uri)
 
     mode = {
         "initdb": handle_initdb,
