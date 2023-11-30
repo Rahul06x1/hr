@@ -17,15 +17,17 @@ class HRException(Exception):
 
 logger = None
 
+
 def update_config(args):
-    config['DATABASE']['dbname'] = args.database
-    with open('config.ini', 'w') as configfile:
+    config["DATABASE"]["dbname"] = args.database
+    with open("config.ini", "w") as configfile:
         config.write(configfile)
+
 
 def parse_args():
     global config
     config = configparser.ConfigParser()
-    config.read('config.ini')
+    config.read("config.ini")
 
     parser = argparse.ArgumentParser(
         prog="hr.py",
@@ -39,7 +41,11 @@ def parse_args():
         default=False,
     )
     parser.add_argument(
-        "-d", "--database", type=str, help="name of custom database (Default : %(default)s)", default=config.get('DATABASE', 'dbname')
+        "-d",
+        "--database",
+        type=str,
+        help="name of custom database (Default : %(default)s)",
+        default=config.get("DATABASE", "dbname"),
     )
 
     subparsers = parser.add_subparsers(dest="mode", help="action to perform")
@@ -106,7 +112,9 @@ def parse_args():
         "leave", help="Add leave to database", description="Add leave to database"
     )
     parser_leave.add_argument("employee_id", type=int, help="employee id of absentee")
-    parser_leave.add_argument("date", type=str,  help="Specify date of absence (YYYY-MM-DD)")
+    parser_leave.add_argument(
+        "date", type=str, help="Specify date of absence (YYYY-MM-DD)"
+    )
     parser_leave.add_argument("reason", type=str, help="reason of absence")
 
     # evavulate leaves remaining
@@ -124,9 +132,7 @@ def parse_args():
         description="Export csv file with employees and their leaves details",
     )
     parser_export.add_argument("-e", "--employee_id", type=int, help="employee id")
-    parser_export.add_argument(
-        "-f", "--filename", type=str, help="csv filename", default="leaves"
-    )
+    parser_export.add_argument("-f", "--filename", type=str, help="csv filename")
     parser_export.add_argument(
         "-d",
         "--directory",
@@ -210,7 +216,7 @@ def get_table_data(args):
     conn.commit()
     lines = cur.fetchall()
     if not lines:
-        logger.error('No employee with id %s',args.employee_id)
+        logger.error("No employee with id %s", args.employee_id)
         sys.exit(-1)
     return lines
 
@@ -293,7 +299,7 @@ def get_leave_detail(args, employee_id=None):
             leaves_taken = 0
         return first_name, last_name, leaves_taken, leaves_remaining, total_leaves
     except Exception as e:
-        logger.error('No employee with id %s', employee_id)
+        logger.error("No employee with id %s", employee_id)
         sys.exit(-1)
 
 
@@ -383,28 +389,17 @@ def handle_export(args):
         os.makedirs(args.directory)
     lines = get_table_data(args)
     for id, lname, fname, designation, email, phone in lines:
-        if args.employee_id:
-            row = get_leave_detail(args, id)
-            with open(
-                os.path.join(
-                    "data",
-                    f"{args.filename}_{fname.lower()}_{lname.lower()}_{date.today()}.csv",
-                ),
-                "a",
-            ) as csvfile:
-                csvwriter = csv.writer(csvfile)
-                csvwriter.writerow(row)
+        row = get_leave_detail(args, id)
+        if args.filename:
+            filename = f"{args.filename}.csv"
+        elif args.employee_id:
+            filename = f"leave_{fname.lower()}_{lname.lower()}_{date.today()}.csv"
         else:
-            row = get_leave_detail(args, id)
-            with open(
-                os.path.join("data", f"{args.filename}_{date.today()}.csv"), "a"
-            ) as csvfile:
-                csvwriter = csv.writer(csvfile)
-                csvwriter.writerow(row)
-    if args.employee_id:
-        logger.info("CSV exported as %s_%s_%s_%s.csv",args.filename,fname.lower(),lname.lower(),date.today())
-    else:
-        logger.info("CSV exported as %s_%s.csv",args.filename, date.today())
+            filename = f"leave_{date.today()}.csv"
+        with open(os.path.join("data", filename), "a") as csvfile:
+            csvwriter = csv.writer(csvfile)
+            csvwriter.writerow(row)
+    logger.info("CSV exported as %s", filename)
 
 
 def main():
