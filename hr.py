@@ -4,7 +4,6 @@ import csv
 from datetime import date
 import logging
 import os
-import shutil
 import sys
 
 import requests
@@ -336,10 +335,7 @@ def handle_generate(args):
     row_count = 0
     if not os.path.exists(args.directory):
         os.makedirs(args.directory)
-    elif args.overwrite:
-        shutil.rmtree(args.directory)
-        os.makedirs(args.directory)
-    else:
+    elif not args.overwrite:
         logger.error(
             """
 Directory %s already exists
