@@ -168,37 +168,6 @@ def setup_logging(is_verbose):
     logger.addHandler(fhandler)
 
 
-def add_leaves(args):
-    # check if employee already taken leave on that date
-    exist = session.query(
-        exists().where(
-            db.Leave.employee_id == args.employee_id, db.Leave.date == args.date
-        )
-    ).scalar()
-    if exist:
-        logger.error("Employee already taken leave on %s", args.date)
-        exit()
-
-    # check if employee reached the leave limit
-    (
-        first_name,
-        last_name,
-        leaves_taken,
-        leaves_remaining,
-        total_leaves,
-    ) = get_leave_detail(args)
-    if leaves_taken >= total_leaves:
-        logger.error(
-            "%s %s reached the leave limit %s", first_name, last_name, total_leaves
-        )
-        exit()
-
-    # add leave to database
-    l = db.Leave(date=args.date, employee_id=args.employee_id, reason=args.reason)
-    session.add(l)
-    session.commit()
-
-
 def get_table_data(args):
     if args.employee_id:
         q = sa.select(
@@ -396,7 +365,34 @@ Use -o to overwrite
 
 
 def handle_leave(args):
-    add_leaves(args)
+    # check if employee already taken leave on that date
+    exist = session.query(
+        exists().where(
+            db.Leave.employee_id == args.employee_id, db.Leave.date == args.date
+        )
+    ).scalar()
+    if exist:
+        logger.error("Employee already taken leave on %s", args.date)
+        exit()
+
+    # check if employee reached the leave limit
+    (
+        first_name,
+        last_name,
+        leaves_taken,
+        leaves_remaining,
+        total_leaves,
+    ) = get_leave_detail(args)
+    if leaves_taken >= total_leaves:
+        logger.error(
+            "%s %s reached the leave limit %s", first_name, last_name, total_leaves
+        )
+        exit()
+
+    # add leave to database
+    l = db.Leave(date=args.date, employee_id=args.employee_id, reason=args.reason)
+    session.add(l)
+    session.commit()
     logger.info("Leave added")
 
 
