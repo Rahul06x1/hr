@@ -7,16 +7,11 @@ import os
 import shutil
 import sys
 
-import psycopg2
 import requests
 import sqlalchemy as sa
 from sqlalchemy.sql import exists
 
 import db
-
-
-class HRException(Exception):
-    pass
 
 
 logger = None
@@ -414,8 +409,6 @@ def handle_export(args):
 
 
 def main():
-    # try:
-    global conn, cur
     args = parse_args()
     setup_logging(args.verbose)
     update_config(args)
@@ -428,14 +421,7 @@ def main():
         "leave_detail": handle_leave_detail,
         "export": handle_export,
     }
-    conn = psycopg2.connect(dbname=args.database)
-    cur = conn.cursor()
     mode[args.mode](args)
-    cur.close()
-    conn.close()
-    # except (Exception, psycopg2.DatabaseError) as error:
-    #     logger.error("Program aborted - %s", error)
-    #     sys.exit(-1)
 
 
 if __name__ == "__main__":
