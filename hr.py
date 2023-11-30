@@ -169,6 +169,9 @@ def setup_logging(is_verbose):
 
 
 def get_table_data(args):
+    # check if employee exists
+    check_employee_exists(args)
+
     if args.employee_id:
         q = sa.select(
             db.Employee.id,
@@ -189,9 +192,6 @@ def get_table_data(args):
         )
 
     lines = session.execute(q).fetchall()
-    if not lines:
-        logger.error("No employee with id %s", args.employee_id)
-        sys.exit(-1)
     return lines
 
 
@@ -241,6 +241,13 @@ REV:20150922T195243Z
 END:VCARD
 """
     return data
+
+
+def check_employee_exists(args):
+    exist = session.query(exists().where(db.Employee.id == args.employee_id)).scalar()
+    if not exist:
+        logger.error("No employee with id %s", args.employee_id)
+        sys.exit(-1)
 
 
 def get_leave_detail(args, employee_id=None):
@@ -303,7 +310,6 @@ def get_leave_detail(args, employee_id=None):
 
 def handle_initdb(args):
     db.create_all(db_uri)
-    session = db.get_session(db_uri)
     d1 = db.Designation(title="Staff Engineer", max_leaves=20)
     d2 = db.Designation(title="Senior Engineer", max_leaves=18)
     d3 = db.Designation(title="Junior Engineer", max_leaves=12)
@@ -365,6 +371,9 @@ Use -o to overwrite
 
 
 def handle_leave(args):
+    # check if employee exists
+    check_employee_exists(args)
+
     # check if employee already taken leave on that date
     exist = session.query(
         exists().where(
@@ -397,6 +406,9 @@ def handle_leave(args):
 
 
 def handle_leave_detail(args):
+    # check if employee exists
+    check_employee_exists(args)
+
     (
         first_name,
         last_name,
