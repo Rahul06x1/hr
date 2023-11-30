@@ -9,6 +9,7 @@ import sys
 
 import psycopg2
 import requests
+import sqlalchemy as sa
 
 import db
 
@@ -324,14 +325,23 @@ def handle_initdb(args):
 
 
 def handle_import(args):
+    db_uri = f"postgresql:///{args.database}"
+    session = db.get_session(db_uri)
     with open(args.employees_file) as f:
         reader = csv.reader(f)
-        for lname, fname, designation, email, phone in reader:
+        for lname, fname, title, email, phone in reader:
+            q = sa.select(db.Designation).where(db.Designation.title==title)
+            designation = session.execute(q).scalar_one()
             logger.debug("Inserting %s", email)
-            with open("sql/add_employees.sql", "r") as query:
-                query = query.read()
-            cur.execute(query, (lname, fname, designation, email, phone))
-        conn.commit()
+            employee = db.Employee(
+                last_name = lname,
+                first_name = fname,
+                email = email,
+                phone = phone,
+                title = designation
+            )
+            session.add(employee)
+        session.commit()
     logger.info("csv file imported")
 
 
