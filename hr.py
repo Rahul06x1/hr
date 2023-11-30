@@ -10,6 +10,8 @@ import sys
 import psycopg2
 import requests
 
+import db
+
 
 class HRException(Exception):
     pass
@@ -304,14 +306,21 @@ def get_leave_detail(args, employee_id=None):
 
 
 def handle_initdb(args):
-    with open("sql/initialize_database.sql") as f:
-        sql = f.read()
-    try:
-        cur.execute(sql)
-        conn.commit()
-        logger.info("Database initialized")
-    except psycopg2.OperationalError as e:
-        logger.error("Database %s doesn't exist", args.database)
+    db_uri = f"postgresql:///{args.database}"
+    db.create_all(db_uri)
+    session = db.get_session(db_uri)
+    d1 = db.Designation(title="Staff Engineer", max_leaves=20)
+    d2 = db.Designation(title="Senior Engineer", max_leaves=18)
+    d3 = db.Designation(title="Junior Engineer", max_leaves=12)
+    d4 = db.Designation(title="Tech. Lead", max_leaves=12)
+    d5 = db.Designation(title="Project Manager", max_leaves=15)
+    session.add(d1)
+    session.add(d2)
+    session.add(d3)
+    session.add(d4)
+    session.add(d5)
+    session.commit()
+    logger.info("Initialized database")
 
 
 def handle_import(args):
