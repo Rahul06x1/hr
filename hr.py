@@ -10,6 +10,7 @@ import sys
 import psycopg2
 import requests
 import sqlalchemy as sa
+from sqlalchemy.sql import exists
 
 import db
 
@@ -174,13 +175,12 @@ def setup_logging(is_verbose):
 
 
 def add_leaves(args):
+    db_uri = f"postgresql:///{args.database}"
+    session = db.get_session(db_uri)
+
     # check if employee already taken leave on that date
-    with open("sql/check_leave_data_exist.sql", "r") as query:
-        query = query.read()
-    cur.execute(query, (args.employee_id, args.date))
-    conn.commit()
-    exists = cur.fetchone()[0]
-    if exists:
+    exist = session.query(exists().where(db.Leave.employee_id==args.employee_id, db.Leave.date==args.date)).scalar()
+    if exist:
         logger.error("Employee already taken leave on %s", args.date)
         exit()
 
@@ -199,13 +199,9 @@ def add_leaves(args):
         exit()
 
     # add leave to database
-    with open("sql/add_leaves.sql", "r") as query:
-        query = query.read()
-
-    cur.execute(query, (args.employee_id, args.date, args.reason))
-    conn.commit()
-    cur.close()
-    conn.close()
+    l = db.Leave(date=args.date, employee_id=args.employee_id, reason=args.reason)
+    session.add(l)
+    session.commit()
 
 
 def get_table_data(args):
@@ -273,37 +269,37 @@ END:VCARD
 
 
 def get_leave_detail(args, employee_id=None):
-    try:
-        if not employee_id:
-            employee_id = args.employee_id
-        with open("sql/get_leave_detail.sql", "r") as query:
-            query = query.read()
+    # try:
+    if not employee_id:
+        employee_id = args.employee_id
+    with open("sql/get_leave_detail.sql", "r") as query:
+        query = query.read()
+    cur.execute(query, (employee_id,))
+    conn.commit()
+    leave_data = cur.fetchall()
+    if leave_data:
+        (
+            first_name,
+            last_name,
+            leaves_taken,
+            leaves_remaining,
+            total_leaves,
+        ) = leave_data[0]
+    else:
+        query = """SELECT e.first_name, e.last_name,d.max_leaves,
+        d.max_leaves as leaves_remaining
+        FROM hr_employees e 
+        INNER JOIN hr_designations d ON e.title_id = d.id 
+        WHERE e.id = %s
+        GROUP BY e.id, e.first_name, e.last_name,d.max_leaves;"""
         cur.execute(query, (employee_id,))
         conn.commit()
-        leave_data = cur.fetchall()
-        if leave_data:
-            (
-                first_name,
-                last_name,
-                leaves_taken,
-                leaves_remaining,
-                total_leaves,
-            ) = leave_data[0]
-        else:
-            query = """SELECT e.first_name, e.last_name,d.no_of_leaves,
-            d.no_of_leaves as leaves_remaining
-            FROM employees e 
-            INNER JOIN designation d ON e.designation = d.designation 
-            WHERE e.id = %s
-            GROUP BY e.id, e.first_name, e.last_name,d.no_of_leaves;"""
-            cur.execute(query, (employee_id,))
-            conn.commit()
-            first_name, last_name, total_leaves, leaves_remaining = cur.fetchall()[0]
-            leaves_taken = 0
-        return first_name, last_name, leaves_taken, leaves_remaining, total_leaves
-    except Exception as e:
-        logger.error("No employee with id %s", employee_id)
-        sys.exit(-1)
+        first_name, last_name, total_leaves, leaves_remaining = cur.fetchall()[0]
+        leaves_taken = 0
+    return first_name, last_name, leaves_taken, leaves_remaining, total_leaves
+    # except Exception as e:
+    #     logger.error("No employee with id %s", employee_id)
+    #     sys.exit(-1)
 
 
 def handle_initdb(args):
@@ -422,28 +418,28 @@ def handle_export(args):
 
 
 def main():
-    try:
-        global conn, cur
-        args = parse_args()
-        setup_logging(args.verbose)
-        update_config(args)
+    # try:
+    global conn, cur
+    args = parse_args()
+    setup_logging(args.verbose)
+    update_config(args)
 
-        mode = {
-            "initdb": handle_initdb,
-            "import": handle_import,
-            "generate": handle_generate,
-            "leave": handle_leave,
-            "leave_detail": handle_leave_detail,
-            "export": handle_export,
-        }
-        conn = psycopg2.connect(dbname=args.database)
-        cur = conn.cursor()
-        mode[args.mode](args)
-        cur.close()
-        conn.close()
-    except (Exception, psycopg2.DatabaseError) as error:
-        logger.error("Program aborted - %s", error)
-        sys.exit(-1)
+    mode = {
+        "initdb": handle_initdb,
+        "import": handle_import,
+        "generate": handle_generate,
+        "leave": handle_leave,
+        "leave_detail": handle_leave_detail,
+        "export": handle_export,
+    }
+    conn = psycopg2.connect(dbname=args.database)
+    cur = conn.cursor()
+    mode[args.mode](args)
+    cur.close()
+    conn.close()
+    # except (Exception, psycopg2.DatabaseError) as error:
+    #     logger.error("Program aborted - %s", error)
+    #     sys.exit(-1)
 
 
 if __name__ == "__main__":

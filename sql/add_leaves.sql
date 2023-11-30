@@ -1,1 +1,1 @@
-INSERT INTO leaves (employee_id ,date, reason) VALUES (%s, %s, %s)
+INSERT INTO hr_leaves (employee_id ,date, reason) VALUES (%s, %s, %s)
