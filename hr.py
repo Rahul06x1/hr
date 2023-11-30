@@ -269,37 +269,34 @@ END:VCARD
 
 
 def get_leave_detail(args, employee_id=None):
-    # try:
+    db_uri = f"postgresql:///{args.database}"
+    session = db.get_session(db_uri)
     if not employee_id:
         employee_id = args.employee_id
-    with open("sql/get_leave_detail.sql", "r") as query:
-        query = query.read()
-    cur.execute(query, (employee_id,))
-    conn.commit()
-    leave_data = cur.fetchall()
-    if leave_data:
+
+    q = sa.select(db.Employee.first_name,db.Employee.last_name,sa.func.count(db.Employee.id),
+        db.Designation.max_leaves).where(db.Employee.id==employee_id,db.Employee.id==db.Leave.employee_id,db.Employee.title_id==db.Designation.id).group_by(db.Employee.id, db.Employee.first_name, db.Employee.last_name,db.Designation.max_leaves)
+    leave_detail = session.execute(q).fetchall()
+    if leave_detail:
         (
             first_name,
             last_name,
             leaves_taken,
-            leaves_remaining,
             total_leaves,
-        ) = leave_data[0]
+        ) = leave_detail[0]
+        leaves_remaining = total_leaves - leaves_taken
     else:
-        query = """SELECT e.first_name, e.last_name,d.max_leaves,
-        d.max_leaves as leaves_remaining
-        FROM hr_employees e 
-        INNER JOIN hr_designations d ON e.title_id = d.id 
-        WHERE e.id = %s
-        GROUP BY e.id, e.first_name, e.last_name,d.max_leaves;"""
-        cur.execute(query, (employee_id,))
-        conn.commit()
-        first_name, last_name, total_leaves, leaves_remaining = cur.fetchall()[0]
+        q = sa.select(db.Employee.first_name,db.Employee.last_name,
+        db.Designation.max_leaves).where(db.Employee.id==employee_id,db.Employee.title_id==db.Designation.id).group_by(db.Employee.id, db.Employee.first_name, db.Employee.last_name,db.Designation.max_leaves)
+        leave_detail = session.execute(q).fetchall()
+        (
+            first_name,
+            last_name,
+            total_leaves,
+        ) = leave_detail[0]
         leaves_taken = 0
+        leaves_remaining = total_leaves
     return first_name, last_name, leaves_taken, leaves_remaining, total_leaves
-    # except Exception as e:
-    #     logger.error("No employee with id %s", employee_id)
-    #     sys.exit(-1)
 
 
 def handle_initdb(args):
