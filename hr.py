@@ -205,15 +205,14 @@ def add_leaves(args):
 
 
 def get_table_data(args):
+    db_uri = f"postgresql:///{args.database}"
+    session = db.get_session(db_uri)
     if args.employee_id:
-        query = "SELECT id, last_name, first_name, designation, email, phone FROM employees WHERE id = %s;"
-        cur.execute(query, (args.employee_id,))
+        q = sa.select(db.Employee.id,db.Employee.last_name,db.Employee.first_name,db.Employee.title_id,db.Employee.email,db.Employee.phone).where(db.Employee.id==args.employee_id)
     else:
-        query = "SELECT id, last_name, first_name, designation, email, phone FROM employees;"
-        cur.execute(query)
+        q = sa.select(db.Employee.id,db.Employee.last_name,db.Employee.first_name,db.Employee.title_id,db.Employee.email,db.Employee.phone)
 
-    conn.commit()
-    lines = cur.fetchall()
+    lines = session.execute(q).fetchall()
     if not lines:
         logger.error("No employee with id %s", args.employee_id)
         sys.exit(-1)
