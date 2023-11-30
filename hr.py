@@ -39,7 +39,7 @@ def parse_args():
         default=False,
     )
     parser.add_argument(
-        "-d", "--database", type=str, help="name of custom database", default=config.get('DATABASE', 'dbname')
+        "-d", "--database", type=str, help="name of custom database (Default : %(default)s)", default=config.get('DATABASE', 'dbname')
     )
 
     subparsers = parser.add_subparsers(dest="mode", help="action to perform")
@@ -87,7 +87,7 @@ def parse_args():
     parser_generate.add_argument(
         "-d",
         "--directory",
-        help="generate files in custom directory",
+        help="generate files in custom directory (Default : %(default)s)",
         action="store",
         type=str,
         default="vcards",
@@ -106,7 +106,7 @@ def parse_args():
         "leave", help="Add leave to database", description="Add leave to database"
     )
     parser_leave.add_argument("employee_id", type=int, help="employee id of absentee")
-    parser_leave.add_argument("date", type=str, help="date of absence")
+    parser_leave.add_argument("date", type=str,  help="Specify date of absence (YYYY-MM-DD)")
     parser_leave.add_argument("reason", type=str, help="reason of absence")
 
     # evavulate leaves remaining
@@ -130,7 +130,7 @@ def parse_args():
     parser_export.add_argument(
         "-d",
         "--directory",
-        help="generate file in custom directory",
+        help="generate file in custom directory (Default : %(default)s)",
         action="store",
         type=str,
         default="data",
