@@ -52,6 +52,15 @@ def parse_args():
         "initdb", help="Initialize database", description="Initialize database"
     )
 
+    # add designation
+    parser_designation = subparsers.add_parser(
+        "designation",
+        help="Add designation to database",
+        description="Add designation to database",
+    )
+    parser_designation.add_argument("designation", type=str, help="designation name")
+    parser_designation.add_argument("max_leaves", type=str, help="leave limit")
+
     # import csv file data to database
     parser_import = subparsers.add_parser(
         "import",
@@ -310,14 +319,16 @@ def get_leave_detail(args, employee_id=None):
 
 def handle_initdb(args):
     db.create_all(db_uri)
-    d1 = db.Designation(title="Staff Engineer", max_leaves=20)
-    d2 = db.Designation(title="Senior Engineer", max_leaves=18)
-    d3 = db.Designation(title="Junior Engineer", max_leaves=12)
-    d4 = db.Designation(title="Tech. Lead", max_leaves=12)
-    d5 = db.Designation(title="Project Manager", max_leaves=15)
-    session.add_all([d1, d2, d3, d4, d5])
-    session.commit()
     logger.info("Initialized database")
+
+def handle_designation(args):
+    try:
+        d = db.Designation(title=args.designation, max_leaves=args.max_leaves)
+        session.add(d)
+        session.commit()
+        logger.info("Designation added")
+    except Exception as e:
+        logger.error("Designation already exist")
 
 
 def handle_import(args):
@@ -448,6 +459,7 @@ def main():
 
     mode = {
         "initdb": handle_initdb,
+        "designation": handle_designation,
         "import": handle_import,
         "generate": handle_generate,
         "leave": handle_leave,

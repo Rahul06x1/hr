@@ -20,6 +20,9 @@ class Employee(HRDBBase):
 
 class Designation(HRDBBase):
     __tablename__ = "hr_designations"
+    __table_args__ = (        
+        UniqueConstraint("title"),
+        )
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(50))
     max_leaves: Mapped[int] = mapped_column(Integer)
