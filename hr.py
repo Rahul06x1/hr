@@ -181,9 +181,6 @@ def setup_logging(is_verbose):
 
 
 def get_table_data(args):
-    # check if employee exists
-    check_employee_exists(args)
-
     if args.employee_id:
         q = sa.select(
             db.Employee.id,
@@ -202,8 +199,10 @@ def get_table_data(args):
             db.Employee.email,
             db.Employee.phone,
         )
-
     lines = session.execute(q).fetchall()
+    if not lines:
+        logger.error("No employee with id %s", args.employee_id)
+        sys.exit(-1)
     return lines
 
 
@@ -253,14 +252,6 @@ REV:20150922T195243Z
 END:VCARD
 """
     return data
-
-
-def check_employee_exists(args):
-    exist = session.query(exists().where(db.Employee.id == args.employee_id)).scalar()
-    if not exist:
-        logger.error("No employee with id %s", args.employee_id)
-        sys.exit(-1)
-
 
 def get_leave_detail(args, employee_id=None):
     if not employee_id:
@@ -391,9 +382,6 @@ Use -o to overwrite
 
 def handle_leave(args):
     try:
-        # check if employee exists
-        check_employee_exists(args)
-
         # check if employee reached the leave limit
         (
             first_name,
@@ -413,30 +401,31 @@ def handle_leave(args):
         session.add(l)
         session.commit()
         logger.info("Leave added")
+    except IndexError:
+        logger.error("No employee with id %s", args.employee_id)
     except Exception as e:
-        logger.error("""Employee already taken leave on that date
-%s""", e)
+        logger.error("Employee already taken leave on %s", args.date)
 
 def handle_leave_detail(args):
-    # check if employee exists
-    check_employee_exists(args)
-
-    (
-        first_name,
-        last_name,
-        leaves_taken,
-        leaves_remaining,
-        total_leaves,
-    ) = get_leave_detail(args)
-    print(
-        f"""
-Name            : {first_name} {last_name}
-Leaves taken    : {leaves_taken}
-Leaves remaining: {leaves_remaining}
-Total leaves    : {total_leaves}
-"""
-    )
-    logger.info("Leave detail generated")
+    try:
+        (
+            first_name,
+            last_name,
+            leaves_taken,
+            leaves_remaining,
+            total_leaves,
+        ) = get_leave_detail(args)
+        print(
+            f"""
+    Name            : {first_name} {last_name}
+    Leaves taken    : {leaves_taken}
+    Leaves remaining: {leaves_remaining}
+    Total leaves    : {total_leaves}
+    """
+        )
+        logger.info("Leave detail generated")
+    except IndexError:
+        logger.error("No employee with id %s", args.employee_id)
 
 
 def handle_export(args):
@@ -458,23 +447,27 @@ def handle_export(args):
 
 
 def main():
-    global db_uri, session
-    args = parse_args()
-    setup_logging(args.verbose)
-    update_config(args)
-    db_uri = f"postgresql:///{args.database}"
-    session = db.get_session(db_uri)
+    try:
+        global db_uri, session
+        args = parse_args()
+        setup_logging(args.verbose)
+        update_config(args)
+        db_uri = f"postgresql:///{args.database}"
+        session = db.get_session(db_uri)
 
-    mode = {
-        "initdb": handle_initdb,
-        "designation": handle_designation,
-        "import": handle_import,
-        "generate": handle_generate,
-        "leave": handle_leave,
-        "leave_detail": handle_leave_detail,
-        "export": handle_export,
-    }
-    mode[args.mode](args)
+        mode = {
+            "initdb": handle_initdb,
+            "designation": handle_designation,
+            "import": handle_import,
+            "generate": handle_generate,
+            "leave": handle_leave,
+            "leave_detail": handle_leave_detail,
+            "export": handle_export,
+        }
+        mode[args.mode](args)
+    except Exception as error:
+        logger.error("Program aborted - %s", error)
+        sys.exit(-1)
 
 
 if __name__ == "__main__":
