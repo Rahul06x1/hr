@@ -27,6 +27,9 @@ class Designation(HRDBBase):
 
 class Leave(HRDBBase):
     __tablename__ = "hr_leaves"
+    __table_args__ = (        
+        UniqueConstraint("employee_id", "date"),
+        )
     id: Mapped[int] = mapped_column(primary_key=True)
     date: Mapped[datetime.date] = mapped_column(Date())
     employee_id: Mapped[int] = mapped_column(ForeignKey("hr_employees.id"))
