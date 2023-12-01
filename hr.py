@@ -6,8 +6,11 @@ import logging
 import os
 import sys
 
+import psycopg2
 import requests
 import sqlalchemy as sa
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql import exists
 
 import db
@@ -328,27 +331,32 @@ def handle_designation(args):
         session.commit()
         logger.info("Designation added")
     except Exception as e:
-        logger.error("Designation already exist")
+        logger.error("Designation '%s' already exist", args.designation)
 
 
 def handle_import(args):
-    with open(args.employees_file) as f:
-        reader = csv.reader(f)
-        for lname, fname, title, email, phone in reader:
-            q = sa.select(db.Designation).where(db.Designation.title == title)
-            designation = session.execute(q).scalar_one()
-            logger.debug("Inserting %s", email)
-            employee = db.Employee(
-                last_name=lname,
-                first_name=fname,
-                email=email,
-                phone=phone,
-                title=designation,
-            )
-            session.add(employee)
-        session.commit()
-    logger.info("csv file imported")
-
+    try:
+        with open(args.employees_file) as f:
+            reader = csv.reader(f)
+            for lname, fname, title, email, phone in reader:
+                q = sa.select(db.Designation).where(db.Designation.title == title)
+                designation = session.execute(q).scalar_one()
+                logger.debug("Inserting %s", email)
+                employee = db.Employee(
+                    last_name=lname,
+                    first_name=fname,
+                    email=email,
+                    phone=phone,
+                    title=designation,
+                )
+                session.add(employee)
+            session.commit()
+        logger.info("CSV file imported")
+    except IntegrityError as e:
+        assert isinstance(e.orig, psycopg2.errors.UniqueViolation)
+        logger.error("Employee already exist with email %s", email)
+    except NoResultFound as e:
+        logger.error("No designation '%s'", title)
 
 def handle_generate(args):
     row_count = 0

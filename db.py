@@ -10,6 +10,9 @@ class HRDBBase(DeclarativeBase):
 
 class Employee(HRDBBase):
     __tablename__ = "hr_employees"
+    __table_args__ = (        
+        UniqueConstraint("email"),
+        )
     id: Mapped[int] = mapped_column(primary_key=True)
     last_name: Mapped[str] = mapped_column(String(50))
     first_name: Mapped[str] = mapped_column(String(50))
