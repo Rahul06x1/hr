@@ -7,11 +7,12 @@ file
 ## Input:
 
     Usage: 
-        hr.py [-h] [-v] [-d] {initdb,import,generate,leave,leave_detail,export}
+        hr.py [-h] [-v] [-d] {initdb,designation,import,generate,leave,leave_detail,export}
 
     Positional Arguments:
-        {initdb,import,generate,leave,leave_detail,export}    action to perform
+        {initdb,designation,import,generate,leave,leave_detail,export}    action to perform
         initdb                                              initialize database
+        designation                                         import designation to database
         import                                              import csv file data to database
         generate                                            generate vcards
         leave                                               add leave to database
@@ -29,6 +30,18 @@ file
     Usage: 
         hr.py initdb [-h]
 
+    Options:
+        -h, --help  show this help message and exit
+
+### designation
+
+    Usage: 
+        hr.py designation [-h] designation max_leaves
+
+    Positional arguments:
+        designation  designation name
+        max_leaves   leave limit
+        
     Options:
         -h, --help  show this help message and exit
 
