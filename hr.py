@@ -293,12 +293,6 @@ def get_leave_detail(args, employee_id=None):
             .where(
                 db.Employee.id == employee_id, db.Employee.title_id == db.Designation.id
             )
-            .group_by(
-                db.Employee.id,
-                db.Employee.first_name,
-                db.Employee.last_name,
-                db.Designation.max_leaves,
-            )
         )
         leave_detail = session.execute(q).fetchall()
         (
