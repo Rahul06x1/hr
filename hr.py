@@ -11,7 +11,6 @@ import requests
 import sqlalchemy as sa
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.sql import exists
 
 import db
 
