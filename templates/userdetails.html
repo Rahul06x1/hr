@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+  <div class="col-5">
+    <ol>
+      <h1> List of employees </h1>
+      {%for u in users %}
+      <li> <a href="{{url_for('employee_details', empid=u.id)}}">{{u.first_name}} {{u.last_name}}</a></li>
+      {%endfor%}
+    </ol>
+  </div>
+  <div class="col-7">
+    <h1> {{user.first_name}} {{user.last_name}}</h1>
+    <h2> {{user.title.title}} </h2>
+    <table>
+      <tr>
+        <th> First name </th>
+        <td> {{user.first_name}}</td>
+      </tr>
+      <tr>
+        <th> Last name </th>
+        <td> {{user.last_name}}</td>
+      </tr>
+      <tr>
+        <th> Email </th>
+        <td> {{user.email}}</td>
+      </tr>
+
+      <tr>
+        <th> Phone </th>
+        <td> {{user.phone}}</td>
+      </tr>
+    </table>
+
+    <h2> Leave Detail </h2>
+    <table>
+      <tr>
+        <th> Taken </th>
+        <td> {{leave.leaves_taken}}</td>
+      </tr>
+      <tr>
+        <th> Remaining </th>
+        <td> {{leave.leaves_remaining}}</td>
+      </tr>
+      <tr>
+        <th> Total </th>
+        <td> {{leave.total_leaves}}</td>
+      </tr>
+    </table>
+    <h2>Leave Form</h2>
+    <form action="{{ url_for('employee_details',empid=user.id) }}" method="post">
+      <label for="date">Date</label>
+      <br>
+      <input type="date" name="date" id="date" required></input>
+      <br>
+      <label for="reason">Reason</label>
+      <br>
+      <textarea type="text" name="reason" placeholder="Reason" id="reason"></textarea>
+      <br>
+      <button type="submit">Submit</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

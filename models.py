@@ -4,6 +4,8 @@ from typing import List
 from sqlalchemy import String, Integer, Date, create_engine, ForeignKey, UniqueConstraint, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, sessionmaker
 
+from flask_sqlalchemy import SQLAlchemy
+
 class HRDBBase(DeclarativeBase):
     def __repr__(self):
         return f"{self.__class__.__name__}(id={self.id})"

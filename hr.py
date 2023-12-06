@@ -12,7 +12,8 @@ import sqlalchemy as sa
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 
-import db
+import models
+import web
 
 
 logger = None
@@ -49,6 +50,10 @@ def parse_args():
     )
 
     subparsers = parser.add_subparsers(dest="mode", help="action to perform")
+
+    # web
+    web_parser = subparsers.add_parser("web", help="Start web server")
+
     # initdb
     parser_initdb = subparsers.add_parser(
         "initdb", help="Initialize database", description="Initialize database"
@@ -182,21 +187,21 @@ def setup_logging(is_verbose):
 def get_table_data(args):
     if args.employee_id:
         q = sa.select(
-            db.Employee.id,
-            db.Employee.last_name,
-            db.Employee.first_name,
-            db.Employee.title_id,
-            db.Employee.email,
-            db.Employee.phone,
-        ).where(db.Employee.id == args.employee_id)
+            models.Employee.id,
+            models.Employee.last_name,
+            models.Employee.first_name,
+            models.Employee.title_id,
+            models.Employee.email,
+            models.Employee.phone,
+        ).where(models.Employee.id == args.employee_id)
     else:
         q = sa.select(
-            db.Employee.id,
-            db.Employee.last_name,
-            db.Employee.first_name,
-            db.Employee.title_id,
-            db.Employee.email,
-            db.Employee.phone,
+            models.Employee.id,
+            models.Employee.last_name,
+            models.Employee.first_name,
+            models.Employee.title_id,
+            models.Employee.email,
+            models.Employee.phone,
         )
     lines = session.execute(q).fetchall()
     if not lines:
@@ -252,27 +257,28 @@ END:VCARD
 """
     return data
 
+
 def get_leave_detail(args, employee_id=None):
     if not employee_id:
         employee_id = args.employee_id
 
     q = (
         sa.select(
-            db.Employee.first_name,
-            db.Employee.last_name,
-            sa.func.count(db.Employee.id),
-            db.Designation.max_leaves,
+            models.Employee.first_name,
+            models.Employee.last_name,
+            sa.func.count(models.Employee.id),
+            models.Designation.max_leaves,
         )
         .where(
-            db.Employee.id == employee_id,
-            db.Employee.id == db.Leave.employee_id,
-            db.Employee.title_id == db.Designation.id,
+            models.Employee.id == employee_id,
+            models.Employee.id == models.Leave.employee_id,
+            models.Employee.title_id == models.Designation.id,
         )
         .group_by(
-            db.Employee.id,
-            db.Employee.first_name,
-            db.Employee.last_name,
-            db.Designation.max_leaves,
+            models.Employee.id,
+            models.Employee.first_name,
+            models.Employee.last_name,
+            models.Designation.max_leaves,
         )
     )
     leave_detail = session.execute(q).fetchall()
@@ -285,13 +291,13 @@ def get_leave_detail(args, employee_id=None):
         ) = leave_detail[0]
         leaves_remaining = total_leaves - leaves_taken
     else:
-        q = (
-            sa.select(
-                db.Employee.first_name, db.Employee.last_name, db.Designation.max_leaves
-            )
-            .where(
-                db.Employee.id == employee_id, db.Employee.title_id == db.Designation.id
-            )
+        q = sa.select(
+            models.Employee.first_name,
+            models.Employee.last_name,
+            models.Designation.max_leaves,
+        ).where(
+            models.Employee.id == employee_id,
+            models.Employee.title_id == models.Designation.id,
         )
         leave_detail = session.execute(q).fetchall()
         (
@@ -304,13 +310,20 @@ def get_leave_detail(args, employee_id=None):
     return first_name, last_name, leaves_taken, leaves_remaining, total_leaves
 
 
+def handle_web(args):
+    web.app.config["SQLALCHEMY_DATABASE_URI"] = f"postgresql:///{args.database}"
+    web.db.init_app(web.app)
+    web.app.run()
+
+
 def handle_initdb(args):
-    db.create_all(db_uri)
+    models.create_all(db_uri)
     logger.info("Initialized database")
+
 
 def handle_designation(args):
     try:
-        d = db.Designation(title=args.designation, max_leaves=args.max_leaves)
+        d = models.Designation(title=args.designation, max_leaves=args.max_leaves)
         session.add(d)
         session.commit()
         logger.info("Designation added")
@@ -323,10 +336,12 @@ def handle_import(args):
         with open(args.employees_file) as f:
             reader = csv.reader(f)
             for lname, fname, title, email, phone in reader:
-                q = sa.select(db.Designation).where(db.Designation.title == title)
+                q = sa.select(models.Designation).where(
+                    models.Designation.title == title
+                )
                 designation = session.execute(q).scalar_one()
                 logger.debug("Inserting %s", email)
-                employee = db.Employee(
+                employee = models.Employee(
                     last_name=lname,
                     first_name=fname,
                     email=email,
@@ -341,6 +356,7 @@ def handle_import(args):
         logger.error("Employee already exist with email %s", email)
     except NoResultFound as e:
         logger.error("No designation '%s'", title)
+
 
 def handle_generate(args):
     row_count = 0
@@ -390,7 +406,9 @@ def handle_leave(args):
             exit()
 
         # add leave to database
-        l = db.Leave(date=args.date, employee_id=args.employee_id, reason=args.reason)
+        l = models.Leave(
+            date=args.date, employee_id=args.employee_id, reason=args.reason
+        )
         session.add(l)
         session.commit()
         logger.info("Leave added")
@@ -398,6 +416,7 @@ def handle_leave(args):
         logger.error("No employee with id %s", args.employee_id)
     except Exception as e:
         logger.error("Employee already taken leave on %s", args.date)
+
 
 def handle_leave_detail(args):
     try:
@@ -446,7 +465,7 @@ def main():
         setup_logging(args.verbose)
         update_config(args)
         db_uri = f"postgresql:///{args.database}"
-        session = db.get_session(db_uri)
+        session = models.get_session(db_uri)
 
         mode = {
             "initdb": handle_initdb,
@@ -456,6 +475,7 @@ def main():
             "leave": handle_leave,
             "leave_detail": handle_leave_detail,
             "export": handle_export,
+            "web": handle_web,
         }
         mode[args.mode](args)
     except Exception as error:

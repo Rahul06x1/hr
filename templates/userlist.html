@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+  <div class="col-5">
+    <ol>
+      <h1> List of employees </h1>
+      {%for u in users %}
+      <li> <a href="{{url_for('employee_details', empid=u.id)}}">{{u.first_name}} {{u.last_name}}</a></li>
+      {%endfor%}
+    </ol>
+  </div>
+  <div class="col-7">
+
+  </div>
+</div>
+{% endblock %}
