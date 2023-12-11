@@ -56,10 +56,23 @@ def employee_details(empid):
 @app.route("/leave/<int:empid>", methods=("GET", "POST"))
 def add_leave(empid):
     if request.method == "POST":
-        date = request.form["date"]
-        reason = request.form["reason"]
-        l = models.Leave(date=date, employee_id=empid, reason=reason)
-        db.session.add(l)
-        db.session.commit()
-        flash("Leave added successfully")
-        return redirect(url_for("employees"))
+        user_query = db.select(models.Employee).where(models.Employee.id == empid)
+        user = db.session.execute(user_query).scalar()
+        leave_query = db.select(func.count(models.Leave.id)).where(
+        models.Leave.employee_id == empid
+    )
+        leave = db.session.execute(leave_query).scalar()
+        if user.title.max_leaves <= leave:
+            flash(f"Employee reached leave limit  {user.title.max_leaves}")
+            return redirect(url_for("employees"))
+        try:
+            date = request.form["date"]
+            reason = request.form["reason"]
+            l = models.Leave(date=date, employee_id=empid, reason=reason)
+            db.session.add(l)
+            db.session.commit()
+            flash("Leave added successfully")
+            return redirect(url_for("employees"))
+        except:
+            flash(f"Employee already taken leave on {date}")
+            return redirect(url_for("employees"))
