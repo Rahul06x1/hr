@@ -76,7 +76,8 @@ function gotEmployees(data) {
 $(function() {
     $("a.userlink").click(function (ev) {
       $("div.flash-messages")[0].innerHTML = "";
-      $("span.info")[0].innerHTML = "Loading...";
+      $("span.info")[0].innerHTML = `<div class="spinner-border" role="status">
+    </div>`
       $.get(ev.target.href, gotEmployees);
       $(this).addClass("disabled");
       $(".userlink").not(this).removeClass("disabled");
