@@ -1,22 +1,12 @@
 function gotEmployees(data) {
-    $("span.info")[0].innerHTML = "";
-    var index = data.user_list.indexOf(data.id);
+      $("span.info")[0].innerHTML = "";
 
-    if (data.user_list[index - 1]){
+
       $("#usercol").find('.prev').css( "display", "block" );
-      $("#usercol").find('.prev').val(`/employees/${data.user_list[index - 1]}`);
-    }
-    else{
-      $("#usercol").find('.prev').css( "display", "none" );
-    }
+      $("#usercol").find('.prev').val(`/employees/${data.prev}`);
 
-    if (data.user_list[index + 1]){
       $("#usercol").find('.next').css( "display", "block" );
-      $("#usercol").find('.next').val(`/employees/${data.user_list[index + 1]}`);
-    }
-    else{
-      $("#usercol").find('.next').css( "display", "none" );
-    }
+      $("#usercol").find('.next').val(`/employees/${data.next}`);
 
     $("#userdetails")[0].innerHTML=`<h3> ${data.fname} ${data.lname}</h3>
     <h4> ${data.title} </h4>
@@ -48,7 +38,7 @@ function gotEmployees(data) {
       </tr>
       <tr>
         <th> Remaining </th>
-        <td> ${data.leaves_remaining}</td>
+        <td> ${data.total_leaves - data.leaves_taken}</td>
       </tr>
       <tr>
         <th> Total </th>
@@ -87,7 +77,9 @@ $(function() {
 
 $(function() {
   $("button.navigation-btn").click(function (ev) {
-      var targetTag = $( `a[href*="${ev.target.value}"]`)[0]
+      var targetTag = $(`a[href="${ev.target.value}"]`).filter(function() {
+        return $(this).attr('href') === ev.target.value;
+      });
       $(targetTag).addClass("disabled");
       $(".userlink").not(targetTag).removeClass("disabled");
       $.get(ev.target.value, gotEmployees);
