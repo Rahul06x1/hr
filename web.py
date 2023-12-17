@@ -1,12 +1,14 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify, flash
+from flask_cors import CORS
 from sqlalchemy.sql import func
-
+from datetime import datetime
 
 import models
 
 
 app = Flask("hrms")
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
+CORS(app)
 db = models.SQLAlchemy(model_class=models.HRDBBase)
 
 
@@ -21,7 +23,14 @@ def employees():
         models.Employee.first_name, models.Employee.last_name
     )
     users = db.session.execute(query).scalars()
-    return render_template("userlist.html", users=users)
+    ret = []
+    for u in users:
+        ret.append({
+            "id" : u.id,
+            "lname" : u.last_name,
+            "fname" : u.first_name,
+        })
+    return jsonify(ret)
 
 
 @app.route("/employees/<int:empid>")
@@ -61,6 +70,9 @@ def employee_details(empid):
 
 @app.route("/leave/<int:empid>", methods=["POST"])
 def add_leave(empid):
+    leave_request = request.get_json()
+    date = datetime.strptime(leave_request['date'], '%Y-%m-%d').date()
+    reason = leave_request['reason']
     user_query = db.select(models.Employee).where(models.Employee.id == empid)
     user = db.session.execute(user_query).scalar()
     leave_query = db.select(func.count(models.Leave.id)).where(
@@ -68,19 +80,26 @@ def add_leave(empid):
     )
     leave = db.session.execute(leave_query).scalar()
     if user.title.max_leaves <= leave:
-        flash(f"Employee reached leave limit  {user.title.max_leaves}")
-        return redirect(url_for("employees"))
+        ret = {
+            "status" : False,
+            "message": f"Employee reached leave limit  {user.title.max_leaves}"
+        }
+        return jsonify(ret)
     try:
-        date = request.form["date"]
-        reason = request.form["reason"]
         l = models.Leave(date=date, employee_id=empid, reason=reason)
         db.session.add(l)
         db.session.commit()
-        flash("Leave added successfully")
-        return redirect(url_for("employees"))
+        ret = {
+            "status" : True,
+            "message": "Leave added successfully"
+        }
+        return jsonify(ret)
     except:
-        flash(f"Employee already taken leave on {date}")
-        return redirect(url_for("employees"))
+        ret = {
+            "status" : False,
+            "message": f"Employee already taken leave on {date}"
+        }
+        return jsonify(ret)
 
 
 @app.errorhandler(500)
