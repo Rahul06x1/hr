@@ -318,15 +318,16 @@ def handle_web(args):
 
 def handle_initdb(args):
     models.create_all(db_uri)
-    designations = [
-            models.Designation(designation="Staff Engineer", max_leaves=20),
-            models.Designation(designation="Senior Engineer", max_leaves=18),
-            models.Designation(designation="Junior Engineer", max_leaves=12),
-            models.Designation(designation="Tech. Lead", max_leaves=12),
-            models.Designation(designation="Project Manager", max_leaves=15),
-        ]
-
-    session.add_all(designations)
+    d1 = models.Designation(title="Staff Engineer", max_leaves=20)
+    d2 = models.Designation(title="Senior Engineer", max_leaves=18)
+    d3 = models.Designation(title="Junior Engineer", max_leaves=12)
+    d4 = models.Designation(title="Tech. Lead", max_leaves=12)
+    d5 = models.Designation(title="Project Manager", max_leaves=15)
+    session.add(d1)
+    session.add(d2)
+    session.add(d3)
+    session.add(d4)
+    session.add(d5)
     session.commit()
     logger.info("Initialized database")
 
