@@ -105,3 +105,21 @@ def add_leave(empid):
 @app.errorhandler(500)
 def page_not_found(e):
     return render_template("500.html"), 500
+
+@app.route("/vcard/<int:empid>")
+def generate_vcard(empid):
+    query = db.select(models.Employee).where(models.Employee.id == empid)
+    user = db.session.execute(query).scalar()
+    ret = { "vcard": f"""BEGIN:VCARD
+VERSION:2.1
+N:{user.last_name};{user.first_name}
+FN:{user.first_name} {user.last_name}
+ORG:Authors, Inc.
+TITLE:{user.title.title}
+TEL;WORK;VOICE:{user.phone}
+ADR;WORK:;;user.address
+EMAIL;PREF;INTERNET:{user.email}
+REV:20150922T195243Z
+END:VCARD
+"""}
+    return jsonify(ret)
