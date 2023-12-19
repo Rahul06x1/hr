@@ -12,7 +12,9 @@ CORS(app)
 db = models.SQLAlchemy(model_class=models.HRDBBase)
 
 
-
+@app.route("/")
+def index():
+    return "<h1>HR API</h1>"
 
 @app.route("/employees")
 def employees():
