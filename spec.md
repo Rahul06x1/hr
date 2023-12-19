@@ -7,7 +7,7 @@ file
 ## Input:
 
     Usage: 
-        hr.py [-h] [-v] [-d] {initdb,designation,import,generate,leave,leave_detail,export}
+        hr.py [-h] [-v] [-d] {initdb,designation,import,generate,leave,leave_detail,export,web}
 
     Positional Arguments:
         {initdb,designation,import,generate,leave,leave_detail,export}    action to perform
@@ -18,6 +18,7 @@ file
         leave                                               add leave to database
         leave_detail                                        evavulate leaves remaining of an employee
         export                                              export csv file with employees and leaves
+        web                                                 to serve flask app
 
     Options:
         -h, --help                          show this help message and exit
@@ -106,6 +107,14 @@ file
         -e <employee_id>      employee id
         -f <filename>         csv filename
         -d <directory>        generate file in custom directory
+
+### web
+
+    Usage: 
+        hr.py web [-h]
+
+    Options:
+        -h, --help            show this help message and exit
 
 
 Each row in the csv_file should have the following columns
