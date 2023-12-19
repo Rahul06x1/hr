@@ -12,3 +12,4 @@ Go to the hr directory and run
 5) ```hr.py leave <employee_id> <date> <reason>``` to add leave to leave record
 6) ```hr.py leave_detail <employee_id>``` to get leave detail of an employee
 7) ```hr.py export``` to export leave details to csv file
+8) ```hr.py web``` to serve flask app
