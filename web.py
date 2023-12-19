@@ -113,7 +113,7 @@ FN:{user.first_name} {user.last_name}
 ORG:Authors, Inc.
 TITLE:{user.title.title}
 TEL;WORK;VOICE:{user.phone}
-ADR;WORK:;;user.address
+ADR;WORK:;;100 Flat Grape Dr.;Fresno;CA;95555;United States of America
 EMAIL;PREF;INTERNET:{user.email}
 REV:20150922T195243Z
 END:VCARD
