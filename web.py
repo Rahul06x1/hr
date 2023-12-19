@@ -83,7 +83,7 @@ def add_leave(empid):
     leave = db.session.execute(leave_query).scalar()
     if user.title.max_leaves <= leave:
         ret = {
-            "status": False,
+            "success": False,
             "message": f"Employee reached leave limit  {user.title.max_leaves}",
         }
         return jsonify(ret)
@@ -91,10 +91,10 @@ def add_leave(empid):
         l = models.Leave(date=date, employee_id=empid, reason=reason)
         db.session.add(l)
         db.session.commit()
-        ret = {"status": True, "message": "Leave added successfully"}
+        ret = {"success": True, "message": "Leave added successfully"}
         return jsonify(ret)
     except:
-        ret = {"status": False, "message": f"Employee already taken leave on {date}"}
+        ret = {"success": False, "message": f"Employee already taken leave on {date}"}
         return jsonify(ret)
 
 
